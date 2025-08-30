@@ -1,0 +1,52 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: videos-api
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        ddl-auto: update
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      fail-on-ignored-properties: true
+  kafka:
+    producer:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+
+# Azure Storage Configuration
+azure:
+  storage:
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net}
+    container-name: ${AZURE_STORAGE_CONTAINER_NAME:videos}
+
+# Kafka Topics Configuration
+kafka:
+  topics:
+    video-upload: ${KAFKA_TOPIC_VIDEO_UPLOAD:video-upload-events}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    operationsSorter: alpha
+    docExpansion: none
+
+tag:
+  swagger:
+    video:
+      name: "Video Management"
+      description: "API for video upload and management"

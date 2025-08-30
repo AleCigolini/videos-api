@@ -1,0 +1,61 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        ddl-auto: update
+  datasource:
+    url: jdbc:postgresql://localhost:5432/techchallenge
+    username: "postgres"
+    password: "postgres"
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    url: jdbc:postgresql://localhost:5432/techchallenge
+    user: postgres
+    password: postgres
+  # Redis Configuration for caching
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 2000ms
+    jedis:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 10 minutes
+      cache-null-values: false
+
+# Mock services configuration
+azure:
+  storage:
+    mock:
+      enabled: true
+    connection-string: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;
+    container-name: videos
+
+kafka:
+  mock:
+    enabled: true
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  topics:
+    video-upload: ${KAFKA_TOPIC_VIDEO_UPLOAD:video-upload-events}
+
+# Logging configuration for development
+logging:
+  level:
+    br.com.fiap.videosapi: DEBUG
+    org.springframework.cache: DEBUG
+    org.springframework.data.redis: DEBUG
+    org.apache.kafka: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Development client configurations
+client:
+  pagamento:
+    base-url: "http://localhost:8080/pagamentos"
