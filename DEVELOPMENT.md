@@ -47,6 +47,27 @@ export SPRING_PROFILES_ACTIVE=local
 docker-compose --profile full-stack up
 ```
 
+### 4. Resolver Problemas de Compilação Lombok
+
+Se encontrar erros de compilação relacionados ao Lombok, siga estes passos:
+
+**Para IntelliJ IDEA:**
+1. Instale o plugin Lombok: `File > Settings > Plugins > Lombok`
+2. Habilite annotation processing: `File > Settings > Build > Compiler > Annotation Processors`
+3. Marque "Enable annotation processing"
+4. Rebuild o projeto: `Build > Rebuild Project`
+
+**Para Eclipse:**
+1. Baixe lombok.jar do site oficial
+2. Execute: `java -jar lombok.jar`
+3. Aponte para a instalação do Eclipse
+4. Reinicie o Eclipse
+
+**Via Maven (alternativa):**
+```bash
+mvn clean compile -Dmaven.compiler.annotationProcessorPaths=org.projectlombok:lombok:1.18.30
+```
+
 ## 🔧 Configuração Detalhada
 
 ### Profiles de Aplicação
@@ -57,26 +78,345 @@ docker-compose --profile full-stack up
 
 ### Variáveis de Ambiente
 
-Copie `.env.example` para `.env` e ajuste conforme necessário:
-
 ```bash
-cp .env.example .env
+# Configurações do banco de dados
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=techchallenge
+
+# Configurações Redis
+SPRING_REDIS_HOST=localhost
+SPRING_REDIS_PORT=6379
+
+# Configurações Kafka
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_TOPIC_VIDEO_UPLOAD=video-upload-events
+KAFKA_TOPIC_VIDEO_STATUS_UPDATE=video-status-update-events
+KAFKA_CONSUMER_GROUP_ID=video-api-consumer-group
+
+# Azure Storage (Mock)
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;
+AZURE_STORAGE_CONTAINER_NAME=videos
 ```
 
-### Serviços Disponíveis
+## 🎯 Testando os Endpoints
+
+### 1. Upload de Vídeo
+
+```bash
+curl -X POST http://localhost:8080/api/v1/videos/upload \
+  -F "file=@/path/to/video.mp4" \
+  -H "Content-Type: multipart/form-data"
+```
+
+### 2. Listar Todos os Vídeos
+
+```bash
+curl -X GET http://localhost:8080/api/v1/videos
+```
+
+### 3. Listar Vídeos por Status
+
+```bash
+# Status disponíveis: UPLOADED, PROCESSING, PROCESSED, FAILED
+curl -X GET http://localhost:8080/api/v1/videos/status/UPLOADED
+```
+
+### 4. Consultar Vídeo Específico
+
+```bash
+curl -X GET http://localhost:8080/api/v1/videos/1
+```
+
+### 5. Simular Atualização de Status via Kafka
+
+Para testar o consumer, você pode publicar uma mensagem no tópico Kafka:
+
+```bash
+# Acesse o Kafka UI em http://localhost:8081
+# Ou use o kafka-console-producer:
+
+docker exec -it videos_kafka kafka-console-producer \
+  --bootstrap-server localhost:29092 \
+  --topic video-status-update-events
+
+# Envie uma mensagem JSON:
+{
+  "videoId": 1,
+  "previousStatus": "UPLOADED",
+  "newStatus": "PROCESSING",
+  "message": "Video processing started",
+  "processedBy": "video-processor-service",
+  "timestamp": "2025-09-06T10:44:00"
+}
+```
+
+## 🔍 Monitoramento e Debug
+
+### Acessar Serviços
+
+- **Aplicação**: http://localhost:8080
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **Kafka UI**: http://localhost:8081
+- **Health Check**: http://localhost:8080/actuator/health
+
+### Logs Importantes
+
+```bash
+# Logs da aplicação
+docker-compose logs app
+
+# Logs do Kafka
+docker-compose logs kafka
+
+# Logs do PostgreSQL
+docker-compose logs postgres
+
+# Logs do Redis
+docker-compose logs redis
+```
+
+### Verificar Cache Redis
+
+```bash
+# Conectar ao Redis
+docker exec -it videos_redis redis-cli
+
+# Verificar chaves de cache
+KEYS video:*
+KEYS videos:*
+
+# Ver status de um vídeo específico
+GET video:status:1
+```
+
+## 🔄 Fluxo Completo de Teste
+
+### 1. Teste de Upload e Processamento
+
+```bash
+# 1. Fazer upload de um vídeo
+curl -X POST http://localhost:8080/api/v1/videos/upload \
+  -F "file=@test-video.mp4"
+
+# 2. Verificar se foi salvo
+curl -X GET http://localhost:8080/api/v1/videos
+
+# 3. Simular mudança de status para PROCESSING
+# (via Kafka UI ou console producer)
+
+# 4. Verificar atualização
+curl -X GET http://localhost:8080/api/v1/videos/1
+
+# 5. Simular conclusão do processamento
+# Enviar status PROCESSED via Kafka
+
+# 6. Verificar link de download disponível
+curl -X GET http://localhost:8080/api/v1/videos/1
+```
+
+## 🛠️ Scripts de Gerenciamento
+
+### Iniciar Ambiente
+
+```bash
+./scripts/dev-setup.sh
+```
+
+### Parar Serviços
+
+```bash
+./scripts/dev-stop.sh
+```
+
+### Limpar Ambiente (Remove volumes)
+
+```bash
+./scripts/dev-clean.sh
+```
+
+## 🐛 Troubleshooting
+
+### Problema: Serviços não iniciam
+
+```bash
+# Verificar se as portas estão livres
+lsof -i :5432  # PostgreSQL
+lsof -i :6379  # Redis
+lsof -i :9092  # Kafka
+
+# Limpar containers antigos
+docker-compose down -v
+docker system prune -f
+```
+
+### Problema: Kafka não conecta
+
+```bash
+# Verificar health do Kafka
+docker-compose ps
+
+# Verificar logs
+docker-compose logs kafka
+
+# Recriar apenas o Kafka
+docker-compose up -d --force-recreate kafka
+```
+
+### Problema: Cache Redis não funciona
+
+```bash
+# Verificar conexão Redis
+docker exec -it videos_redis redis-cli ping
+
+# Verificar configuração da aplicação
+curl http://localhost:8080/actuator/health
+```
+
+## 📋 Serviços Disponíveis
 
 | Serviço | URL/Porta | Descrição |
 |---------|-----------|-----------|
-| PostgreSQL | `localhost:5432` | Banco de dados |
-| Redis | `localhost:6379` | Cache |
-| Kafka | `localhost:9092` | Message broker |
-| Kafka UI | `http://localhost:8081` | Interface do Kafka |
-| Azurite | `localhost:10000` | Mock Azure Storage |
-| API | `http://localhost:8080` | Aplicação principal |
+| API Principal | http://localhost:8080 | Aplicação Spring Boot |
+| Swagger UI | http://localhost:8080/swagger-ui.html | Documentação interativa da API |
+| Health Check | http://localhost:8080/actuator/health | Status da aplicação |
+| PostgreSQL | localhost:5432 | Banco de dados principal |
+| Redis | localhost:6379 | Cache distribuído |
+| Kafka | localhost:9092 | Message broker |
+| Kafka UI | http://localhost:8081 | Interface web do Kafka |
+| Azurite | localhost:10000-10002 | Mock Azure Blob Storage |
+
+## 🔄 Tópicos Kafka
+
+| Tópico | Descrição | Uso |
+|--------|-----------|-----|
+| `video-upload-events` | Eventos de upload de vídeo | Publicado após upload bem-sucedido |
+| `video-status-update-events` | Atualizações de status | Consumido para atualizar status no banco |
+
+## 📊 Estrutura do Cache Redis
+
+```
+video:{id}              # Objeto completo do vídeo (TTL: 10min)
+video:status:{id}       # Status do vídeo (TTL: 10min)
+videos:all              # Lista de todos os vídeos (TTL: 10min)
+videos:status_{status}  # Lista filtrada por status (TTL: 10min)
+```
+
+## 🧪 Dados de Teste
+
+### Exemplo de Payload para Status Update
+
+```json
+{
+  "videoId": 1,
+  "previousStatus": "UPLOADED",
+  "newStatus": "PROCESSING",
+  "message": "Video processing started by external service",
+  "processedBy": "video-processor-v1.0",
+  "timestamp": "2025-09-06T10:44:00"
+}
+```
+
+### Formatos de Vídeo Suportados
+
+- MP4, AVI, MOV, WMV, FLV, WebM, MKV
+- Tamanho máximo: 500MB
+- Validação via Apache Tika
+
+## 🚀 Próximos Passos
+
+1. **Resolver Compilação Lombok**: Configure annotation processing na IDE
+2. **Testar Upload**: Use um arquivo de vídeo pequeno para teste
+3. **Verificar Consumer**: Publique mensagem no Kafka e verifique atualização
+4. **Monitorar Cache**: Use Redis CLI para verificar chaves criadas
+5. **Validar Fluxo Completo**: Teste todo o ciclo de upload → processamento → consulta
+
+## 📝 Notas Importantes
+
+- O perfil `local` usa mocks para Azure Storage e Kafka (via Redis)
+- Logs detalhados estão habilitados para debug
+- Health checks garantem que serviços estejam prontos antes da aplicação iniciar
+- Migrations do Flyway são executadas automaticamente na inicialização
 
 ## 🧪 Mocks e Simulações
 
 ### Azure Blob Storage Mock
+
+O Azurite simula o Azure Blob Storage localmente:
+
+```bash
+# Verificar containers
+curl http://localhost:10000/devstoreaccount1?comp=list
+
+# Arquivos são armazenados em: /tmp/mock-azure-storage/
+```
+
+### Kafka Mock (Redis)
+
+No perfil `local`, eventos Kafka são simulados via Redis:
+
+```bash
+# Verificar eventos no Redis
+docker exec -it videos_redis redis-cli
+KEYS *events*
+```
+
+## 🔧 Configuração da IDE
+
+### IntelliJ IDEA
+
+1. **Importar Projeto**: `File > Open` → selecione o `pom.xml`
+2. **Configurar JDK**: `File > Project Structure > Project > SDK` → Java 21
+3. **Habilitar Lombok**: 
+   - `File > Settings > Plugins` → instalar Lombok Plugin
+   - `File > Settings > Build > Compiler > Annotation Processors` → Enable annotation processing
+4. **Configurar Run Configuration**:
+   - Main class: `br.com.fiap.videosapi.VideosApiApplication`
+   - Environment variables: `SPRING_PROFILES_ACTIVE=local`
+   - Working directory: `/Users/naldo7/IdeaProjects/videos-api`
+
+### VS Code
+
+1. **Extensões necessárias**:
+   - Extension Pack for Java
+   - Spring Boot Extension Pack
+   - Lombok Annotations Support
+
+2. **Configurar settings.json**:
+```json
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "spring-boot.ls.problem.application-properties.enabled": true
+}
+```
+
+## 📈 Monitoramento de Performance
+
+### Métricas Disponíveis
+
+```bash
+# Actuator endpoints
+curl http://localhost:8080/actuator/metrics
+curl http://localhost:8080/actuator/health/redis
+curl http://localhost:8080/actuator/health/db
+```
+
+### Cache Hit Rate
+
+```bash
+# Verificar estatísticas do Redis
+docker exec -it videos_redis redis-cli info stats
+```
+
+## 🔒 Segurança em Desenvolvimento
+
+- Credenciais padrão apenas para desenvolvimento local
+- Azure Storage usa chaves de desenvolvimento do Azurite
+- Kafka sem autenticação (apenas desenvolvimento)
+- PostgreSQL com usuário/senha padrão
+
+**⚠️ NUNCA use essas configurações em produção!**
 
 O `MockAzureBlobStorageService` simula o Azure Blob Storage:
 

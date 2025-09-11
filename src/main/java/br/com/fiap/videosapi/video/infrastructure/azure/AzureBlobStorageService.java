@@ -87,6 +87,6 @@ public class AzureBlobStorageService {
         if (originalFileName != null && originalFileName.contains(".")) {
             extension = originalFileName.substring(originalFileName.lastIndexOf("."));
         }
-        return UUID.randomUUID().toString() + extension;
+        return UUID.randomUUID() + extension;
     }
 }

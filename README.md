@@ -5,9 +5,12 @@ Uma aplicação Spring Boot robusta para upload e gerenciamento de vídeos com i
 ## Funcionalidades
 
 - **Upload de Vídeos**: Endpoint REST API para upload de arquivos de vídeo (até 500MB)
+- **Listagem de Vídeos**: Endpoints para listar vídeos processados com filtros por status
+- **Consulta Individual**: Endpoint para consultar informações específicas de um vídeo
 - **Armazenamento Azure**: Armazenamento seguro de vídeos usando Azure Blob Storage
-- **Streaming de Eventos**: Integração Kafka para notificações de upload
-- **Cache Redis**: Cache distribuído para melhor performance
+- **Streaming de Eventos**: Integração Kafka para notificações de upload e atualizações de status
+- **Consumer de Status**: Consumidor Kafka para processar atualizações de status de processamento
+- **Cache Redis**: Cache distribuído para melhor performance com TTL configurável
 - **Desenvolvimento Docker**: Ambiente de desenvolvimento completamente containerizado
 - **Serviços Mock**: Desenvolvimento local com mocks do Azure Storage e Kafka
 - **Validação de Arquivos**: Detecção de tipo MIME e validação de tamanho
@@ -119,6 +122,27 @@ Para desenvolvimento local, a aplicação usa mocks inteligentes:
 - **Mock Kafka**: Eventos armazenados no Redis com TTL de 1 hora
 - **Cache Redis**: TTL de 10 minutos para dados da aplicação
 
+## 🔄 Fluxo de Processamento de Vídeos
+
+### 1. Upload do Vídeo
+1. Recebe arquivo de vídeo via endpoint REST
+2. Valida tipo MIME e tamanho do arquivo
+3. Faz upload para Azure Blob Storage (ou mock local)
+4. Salva metadados no PostgreSQL
+5. Armazena informações no Redis para consulta rápida
+6. Publica evento no tópico Kafka `video-upload-events`
+
+### 2. Processamento de Status
+1. Consumer escuta o tópico `video-status-update-events`
+2. Atualiza status no banco PostgreSQL
+3. Atualiza cache Redis
+4. Registra timestamp de processamento quando aplicável
+
+### 3. Consulta de Vídeos
+1. Verifica cache Redis primeiro
+2. Consulta banco PostgreSQL se necessário
+3. Retorna informações com link de download (se processado)
+
 ## 🧪 Testes
 
 ```bash
@@ -144,6 +168,42 @@ Content-Type: multipart/form-data
 
 Parâmetros:
 - file: Arquivo de vídeo (máx 500MB)
+
+Resposta:
+- 201: Upload realizado com sucesso
+- 400: Arquivo inválido ou parâmetros incorretos
+- 500: Erro interno do servidor
+```
+
+### Listar Todos os Vídeos
+```http
+GET /api/v1/videos
+
+Resposta:
+- 200: Lista de vídeos com informações de status e processamento
+```
+
+### Listar Vídeos por Status
+```http
+GET /api/v1/videos/status/{status}
+
+Parâmetros:
+- status: UPLOADED, PROCESSING, PROCESSED, FAILED
+
+Resposta:
+- 200: Lista filtrada de vídeos
+```
+
+### Consultar Vídeo por ID
+```http
+GET /api/v1/videos/{id}
+
+Parâmetros:
+- id: ID do vídeo
+
+Resposta:
+- 200: Informações detalhadas do vídeo
+- 404: Vídeo não encontrado
 ```
 
 ### Health Check

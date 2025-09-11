@@ -44,6 +44,11 @@ kafka:
   bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   topics:
     video-upload: ${KAFKA_TOPIC_VIDEO_UPLOAD:video-upload-events}
+    video-status-update: ${KAFKA_TOPIC_VIDEO_STATUS_UPDATE:video-status-update-events}
+  consumer:
+    group-id: ${KAFKA_CONSUMER_GROUP_ID:video-api-consumer-group}
+    auto-offset-reset: earliest
+    enable-auto-commit: false
 
 # Logging configuration for development
 logging:
