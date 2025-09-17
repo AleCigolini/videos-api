@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: java-app-pedido-produto
+  name: videos-api
 spec:
   replicas: 1
   strategy:
@@ -11,22 +11,22 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: java-app-pedido-produto
+      app: videos-api
   template:
     metadata:
       labels:
-        app: java-app-pedido-produto
+        app: videos-api
     spec:
       containers:
-        - name: java-app-pedido-produto
-          image: alecigolini/fiap-techchallengeapipedidoproduto:latest
+        - name: videos-api
+          image: alecigolini/hackaton-videosapi:latest
           ports:
             - containerPort: 8080
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: prod
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:postgresql://pedido-produto-dev.postgres.database.azure.com:5432/postgres
+              value: jdbc:postgresql://videos-api-dev.postgres.database.azure.com:5432/postgres
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -38,7 +38,7 @@ spec:
                   name: app-secret
                   key: POSTGRES_PASSWORD
             - name: SPRING_FLYWAY_URL
-              value: jdbc:postgresql://pedido-produto-dev.postgres.database.azure.com:5432/postgres
+              value: jdbc:postgresql://videos-api-dev.postgres.database.azure.com:5432/postgres
             - name: SPRING_FLYWAY_USER
               valueFrom:
                 secretKeyRef:
@@ -49,6 +49,19 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: POSTGRES_PASSWORD
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AZURE_STORAGE_CONNECTION_STRING
+            - name: KAFKA_TOPIC_VIDEO_UPLOAD
+              value: video.uploaded
+            - name: KAFKA_TOPIC_VIDEO_STATUS_UPDATE
+              value: video.status
+            - name: SPRING_REDIS_HOST
+              value: redis
+            - name: SPRING_REDIS_PORT
+              value: "6379"
           resources:
             requests:
               cpu: "400m"
@@ -72,37 +85,37 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: java-app-pedido-produto
+  name: videos-api
 spec:
   ports:
     - protocol: TCP
       port: 80
       targetPort: 8080
   selector:
-    app: java-app-pedido-produto
+    app: videos-api
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: java-app-pedido-produto-ingress
+  name: videos-api-ingress
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /pedidos
+          - path: /
             pathType: Prefix
             backend:
               service:
-                name: java-app-pedido-produto
+                name: videos-api
                 port:
                   number: 80
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: java-app-pedido-produto-hpa
+  name: videos-api-hpa
   namespace: default
 spec:
   maxReplicas: 3
@@ -110,7 +123,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind:  Deployment
-    name: java-app-pedido-produto
+    name: videos-api
   metrics:
     - type: Resource
       resource:
