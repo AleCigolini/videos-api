@@ -1,0 +1,31 @@
+spring:
+  profiles:
+    active: local
+  application:
+    name: videos-api
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        ddl-auto: update
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      fail-on-ignored-properties: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    operationsSorter: alpha
+    docExpansion: none
+
+tag:
+  swagger:
+    video:
+      name: "Video Management"
+      description: "API for video upload and management"
