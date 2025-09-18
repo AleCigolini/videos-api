@@ -28,7 +28,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <sonar.organization>pos-fiap-techchallenge</sonar.organization>
+        <sonar.organization>hackaton-fiap</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
     <dependencies>
