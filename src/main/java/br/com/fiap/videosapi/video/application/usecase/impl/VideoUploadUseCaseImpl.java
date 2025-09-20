@@ -12,6 +12,7 @@ import br.com.fiap.videosapi.video.infrastructure.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +30,9 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
     private final VideoEventProducer videoEventProducer;
     private final VideoRepository videoRepository;
     private final Tika tika = new Tika();
+
+    @Value("${azure.storage.connection-string}")
+    String connectionString;
 
     private static final List<String> ALLOWED_VIDEO_TYPES = Arrays.asList(
             "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", "video/webm", "video/mkv"
@@ -101,6 +105,7 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
                 .contentType(video.getContentType())
                 .fileSize(video.getFileSize())
                 .containerName(video.getContainerName())
+                .connectionString(connectionString)
                 .status(video.getStatus())
                 .uploadedAt(video.getUploadedAt())
                 .eventType("VIDEO_UPLOAD_SUCCESS")
