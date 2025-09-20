@@ -1,27 +1,10 @@
 package br.com.fiap.videosapi.video.infrastructure.controller;
 
-import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
-import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
-import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import br.com.fiap.videosapi.video.presentation.rest.impl.VideoRestControllerImpl;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-@WebMvcTest(VideoController.class)
-class VideoControllerTest {
+@WebMvcTest(VideoRestControllerImpl.class)
+class VideoRestControllerImplTest {
 
 //    @Autowired
 //    private MockMvc mockMvc;
