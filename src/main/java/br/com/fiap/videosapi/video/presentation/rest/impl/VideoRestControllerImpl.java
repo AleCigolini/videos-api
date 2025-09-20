@@ -26,26 +26,36 @@ public class VideoRestControllerImpl implements VideoRestController {
     private final VideoListUseCase videoListUseCase;
 
     @Override
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<VideoUploadResponse> uploadVideo(@RequestParam("file") MultipartFile file) {
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "!files")
+    public ResponseEntity<?> uploadVideos(@RequestParam("files") List<MultipartFile> files) {
+        log.info("Received request to upload {} video(s)", files.size());
 
-        log.info("Received video upload request for file: {}", file.getOriginalFilename());
+        if (files.isEmpty()) {
+            log.warn("No files provided in the upload request");
+            return ResponseEntity.badRequest().body("No files provided for upload");
+        }
 
         try {
-            VideoUploadResponse response = videoUploadUseCase.uploadVideo(file);
+            List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files);
 
-            if (response.getId() != null) {
-                log.info("Video uploaded successfully with ID: {}", response.getId());
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            // Check if all uploads were successful
+            boolean allSuccessful = responses.stream()
+                    .allMatch(response -> response.getId() != null);
+
+            if (allSuccessful) {
+                log.info("Successfully uploaded {} videos", responses.size());
+                return ResponseEntity.status(HttpStatus.CREATED).body(responses);
             } else {
-                log.error("Video upload failed: {}", response.getMessage());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                log.warn("Some videos failed to upload. Success: {}, Failed: {}",
+                        responses.stream().filter(r -> r.getId() != null).count(),
+                        responses.stream().filter(r -> r.getId() == null).count());
+                return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(responses);
             }
 
         } catch (Exception e) {
-            log.error("Unexpected error during video upload", e);
+            log.error("Unexpected error during video uploads", e);
             VideoUploadResponse errorResponse = VideoUploadResponse.builder()
-                    .message("Unexpected error occurred during video upload: " + e.getMessage())
+                    .message("Unexpected error occurred during video uploads: " + e.getMessage())
                     .build();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
