@@ -6,8 +6,8 @@ spring:
     driver-class-name: org.postgresql.Driver
   flyway:
     url: jdbc:postgresql://localhost-prod:5432/techchallenge
-    user: postgres
-    password: postgres
+    user: "root"
+    password: "m@_ssq@HJ7<h(+"
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:

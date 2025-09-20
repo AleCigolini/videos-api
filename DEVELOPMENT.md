@@ -373,7 +373,6 @@ KEYS *events*
 4. **Configurar Run Configuration**:
    - Main class: `br.com.fiap.videosapi.VideosApiApplication`
    - Environment variables: `SPRING_PROFILES_ACTIVE=local`
-   - Working directory: `/Users/naldo7/IdeaProjects/videos-api`
 
 ### VS Code
 

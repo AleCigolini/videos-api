@@ -16,6 +16,8 @@ spring:
     deserialization:
       fail-on-unknown-properties: true
       fail-on-ignored-properties: true
+  main:
+    allow-bean-definition-overriding: true
 
 springdoc:
   api-docs:

@@ -8,11 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.listener.ChannelTopic;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
 
 @Component
 @RequiredArgsConstructor
@@ -22,15 +18,15 @@ public class MockVideoStatusUpdateConsumer implements MessageListener {
 
     private final VideoStatusUpdateUseCase videoStatusUpdateUseCase;
     private final ObjectMapper objectMapper;
-    private final RedisMessageListenerContainer redisMessageListenerContainer;
+//    private final RedisMessageListenerContainer redisMessageListenerContainer;
 
     private static final String VIDEO_STATUS_UPDATE_CHANNEL = "video-status-update-events";
 
-    @PostConstruct
-    public void subscribeToStatusUpdates() {
-        log.info("Subscribing to Redis channel for video status updates: {}", VIDEO_STATUS_UPDATE_CHANNEL);
-        redisMessageListenerContainer.addMessageListener(this, new ChannelTopic(VIDEO_STATUS_UPDATE_CHANNEL));
-    }
+//    @PostConstruct
+//    public void subscribeToStatusUpdates() {
+//        log.info("Subscribing to Redis channel for video status updates: {}", VIDEO_STATUS_UPDATE_CHANNEL);
+//        redisMessageListenerContainer.addMessageListener(this, new ChannelTopic(VIDEO_STATUS_UPDATE_CHANNEL));
+//    }
 
     @Override
     public void onMessage(@org.springframework.lang.NonNull Message message, @org.springframework.lang.Nullable byte[] pattern) {
