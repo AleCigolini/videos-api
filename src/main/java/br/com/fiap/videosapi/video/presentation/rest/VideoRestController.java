@@ -74,11 +74,4 @@ public interface VideoRestController {
             @ApiResponse(responseCode = "404", description = "Video not found")
     })
     ResponseEntity<VideoListResponse> getVideoById(@Parameter(description = "Video ID", required = true) @PathVariable Long id);
-
-    @Operation(
-            summary = "Health check endpoint",
-            description = "Check if the video service is running"
-    )
-    @ApiResponse(responseCode = "200", description = "Service is healthy")
-    ResponseEntity<String> healthCheck();
 }

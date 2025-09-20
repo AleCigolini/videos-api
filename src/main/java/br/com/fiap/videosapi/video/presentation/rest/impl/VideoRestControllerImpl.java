@@ -89,10 +89,4 @@ public class VideoRestControllerImpl implements VideoRestController {
             return ResponseEntity.notFound().build();
         }
     }
-
-    @Override
-    @GetMapping("/health")
-    public ResponseEntity<String> healthCheck() {
-        return ResponseEntity.ok("Video service is running");
-    }
 }
