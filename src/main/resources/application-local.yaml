@@ -7,13 +7,13 @@ spring:
         ddl-auto: update
   datasource:
     url: jdbc:postgresql://localhost:5432/techchallenge
-    username: "root"
-    password: "m@_ssq@HJ7<h(+"
+    username: "postgres"
+    password: "postgres"
     driver-class-name: org.postgresql.Driver
   flyway:
     url: jdbc:postgresql://localhost:5432/techchallenge
-    user: "root"
-    password: "m@_ssq@HJ7<h(+"
+    user: "postgres"
+    password: "postgres"
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:

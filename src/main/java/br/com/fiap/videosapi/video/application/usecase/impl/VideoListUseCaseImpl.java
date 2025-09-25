@@ -52,7 +52,6 @@ public class VideoListUseCaseImpl implements VideoListUseCase {
     private VideoListResponse mapToVideoListResponse(Video video) {
         String downloadUrl = null;
         
-        // Generate download URL only for processed videos
         if (video.getStatus() == VideoStatus.PROCESSED) {
             downloadUrl = video.getAzureBlobUrl();
         }
