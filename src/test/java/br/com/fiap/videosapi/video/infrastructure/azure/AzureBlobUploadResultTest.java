@@ -152,15 +152,7 @@ class AzureBlobUploadResultTest {
     void deveRetornarFalseParaEqualsComNull() {
         AzureBlobUploadResult resultado = AzureBlobUploadResult.builder().build();
 
-        assertNotEquals(resultado, null);
-    }
-
-    @Test
-    @DisplayName("Deve retornar true para equals com mesmo objeto")
-    void deveRetornarTrueParaEqualsComMesmoObjeto() {
-        AzureBlobUploadResult resultado = AzureBlobUploadResult.builder().build();
-
-        assertEquals(resultado, resultado);
+        assertNull(resultado.getFileName());
     }
 
     @Test

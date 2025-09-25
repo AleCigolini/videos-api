@@ -31,7 +31,6 @@ class VideoStatusUpdateUseCaseImplTest {
     private Video videoPendente;
     private Video videoProcessando;
     private VideoStatusUpdateEvent eventoSucesso;
-    private VideoStatusUpdateEvent eventoProcessamento;
 
     @BeforeEach
     void setUp() {
@@ -55,13 +54,6 @@ class VideoStatusUpdateUseCaseImplTest {
                 .videoId(1L)
                 .newStatus(VideoStatus.PROCESSED)
                 .message("Processamento concluído com sucesso")
-                .processedBy("processing-service")
-                .build();
-
-        eventoProcessamento = VideoStatusUpdateEvent.builder()
-                .videoId(2L)
-                .newStatus(VideoStatus.PROCESSING)
-                .message("Iniciando processamento")
                 .processedBy("processing-service")
                 .build();
     }

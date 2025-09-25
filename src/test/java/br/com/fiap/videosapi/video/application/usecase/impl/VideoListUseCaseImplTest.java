@@ -94,30 +94,30 @@ class VideoListUseCaseImplTest {
     @Test
     @DisplayName("Deve listar vídeos por status PROCESSED com sucesso")
     void deveListarVideosPorStatusProcessedComSucesso() {
-        List<Video> videosProcessados = Arrays.asList(videoProcessado);
+        List<Video> videosProcessados = Collections.singletonList(videoProcessado);
         when(videoRepository.findByStatus(VideoStatus.PROCESSED)).thenReturn(videosProcessados);
 
         List<VideoListResponse> resultado = videoListUseCase.listVideosByStatus(VideoStatus.PROCESSED);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        assertEquals(VideoStatus.PROCESSED, resultado.get(0).getStatus());
-        assertNotNull(resultado.get(0).getDownloadUrl());
+        assertEquals(VideoStatus.PROCESSED, resultado.getFirst().getStatus());
+        assertNotNull(resultado.getFirst().getDownloadUrl());
         verify(videoRepository).findByStatus(VideoStatus.PROCESSED);
     }
 
     @Test
     @DisplayName("Deve listar vídeos por status PROCESSING com sucesso")
     void deveListarVideosPorStatusPendingComSucesso() {
-        List<Video> videosPendentes = Arrays.asList(videoPendente);
+        List<Video> videosPendentes = Collections.singletonList(videoPendente);
         when(videoRepository.findByStatus(VideoStatus.PROCESSING)).thenReturn(videosPendentes);
 
         List<VideoListResponse> resultado = videoListUseCase.listVideosByStatus(VideoStatus.PROCESSING);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        assertEquals(VideoStatus.PROCESSING, resultado.get(0).getStatus());
-        assertNull(resultado.get(0).getDownloadUrl());
+        assertEquals(VideoStatus.PROCESSING, resultado.getFirst().getStatus());
+        assertNull(resultado.getFirst().getDownloadUrl());
         verify(videoRepository).findByStatus(VideoStatus.PROCESSING);
     }
 
