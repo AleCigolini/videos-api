@@ -1,23 +1,19 @@
-package br.com.fiap.videosapi.video.infrastructure.controller;
+package br.com.fiap.videosapi.video.presentation.rest.impl;
 
 import br.com.fiap.videosapi.video.application.usecase.VideoListUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoListResponse;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
 import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
-import br.com.fiap.videosapi.video.presentation.rest.impl.VideoRestControllerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
