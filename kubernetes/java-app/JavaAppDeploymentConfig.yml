@@ -71,13 +71,13 @@ spec:
               memory: "1024Mi"
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /videos/actuator/health
               port: 8080
             initialDelaySeconds: 60
             periodSeconds: 5
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /videos/actuator/health
               port: 8080
             initialDelaySeconds: 60
             periodSeconds: 10
@@ -104,7 +104,7 @@ spec:
   rules:
     - http:
         paths:
-          - path: /
+          - path: /videos
             pathType: Prefix
             backend:
               service:

@@ -31,3 +31,7 @@ tag:
     video:
       name: "Video Management"
       description: "API for video upload and management"
+
+server:
+  servlet:
+    context-path: /videos
