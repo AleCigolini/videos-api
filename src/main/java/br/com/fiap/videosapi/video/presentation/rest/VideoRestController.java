@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 
@@ -74,4 +75,16 @@ public interface VideoRestController {
             @ApiResponse(responseCode = "404", description = "Video not found")
     })
     ResponseEntity<VideoListResponse> getVideoById(@Parameter(description = "Video ID", required = true) @PathVariable Long id);
+
+    @Operation(
+            summary = "Download video and extracted frames (ZIP)",
+            description = "Download the original uploaded video along with all extracted frames stored under {videoId}/frames as a single ZIP archive"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "ZIP generated successfully"),
+            @ApiResponse(responseCode = "404", description = "Video or associated blobs not found"),
+            @ApiResponse(responseCode = "500", description = "Error generating ZIP archive")
+    })
+    ResponseEntity<StreamingResponseBody> downloadVideoAndFrames(
+            @Parameter(description = "Video ID", required = true) @PathVariable Long id);
 }

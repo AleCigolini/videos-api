@@ -2,19 +2,27 @@ package br.com.fiap.videosapi.video.presentation.rest.impl;
 
 import br.com.fiap.videosapi.video.application.usecase.VideoListUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
+import br.com.fiap.videosapi.video.application.usecase.VideoDownloadUseCase;
+import br.com.fiap.videosapi.video.application.usecase.dto.VideoDownloadData;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoListResponse;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
 import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
+import br.com.fiap.videosapi.video.infrastructure.azure.AzureBlobStorageService;
 import br.com.fiap.videosapi.video.presentation.rest.VideoRestController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.InputStream;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/api/v1/videos")
@@ -24,6 +32,8 @@ public class VideoRestControllerImpl implements VideoRestController {
 
     private final VideoUploadUseCase videoUploadUseCase;
     private final VideoListUseCase videoListUseCase;
+    private final VideoDownloadUseCase videoDownloadUseCase;
+    private final AzureBlobStorageService azureBlobStorageService;
 
     @Override
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -38,7 +48,6 @@ public class VideoRestControllerImpl implements VideoRestController {
         try {
             List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files);
 
-            // Check if all uploads were successful
             boolean allSuccessful = responses.stream()
                     .allMatch(response -> response.getId() != null);
 
@@ -88,5 +97,65 @@ public class VideoRestControllerImpl implements VideoRestController {
             log.error("Video not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @Override
+    @GetMapping(value = "/{id}/download", produces = "application/zip")
+    public ResponseEntity<StreamingResponseBody> downloadVideoAndFrames(@PathVariable Long id) {
+        log.info("Received request to download video {} and its frames as ZIP", id);
+        try {
+            VideoDownloadData data = videoDownloadUseCase.prepareDownload(id);
+
+            StreamingResponseBody responseBody = outputStream -> {
+                try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
+                    addBlobToZip(zipOut, data.getVideoBlobName(), data.getVideo().getOriginalFileName());
+
+                    for (String frameBlob : data.getFrameBlobNames()) {
+                        String entryName = deriveFrameEntryName(id, frameBlob);
+                        addBlobToZip(zipOut, frameBlob, entryName);
+                    }
+                    zipOut.finish();
+                } catch (Exception ex) {
+                    log.error("Error while streaming ZIP for video {}: {}", id, ex.getMessage(), ex);
+                }
+            };
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + data.getZipFileName());
+            headers.add(HttpHeaders.CONTENT_TYPE, "application/zip");
+
+            return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            log.warn("Download request failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalStateException e) {
+            log.warn("Invalid state for download: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            log.error("Unexpected error generating ZIP for video {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private void addBlobToZip(ZipOutputStream zipOut, String blobName, String entryName) throws Exception {
+        try (InputStream in = azureBlobStorageService.openBlobInputStream(blobName)) {
+            ZipEntry zipEntry = new ZipEntry(entryName);
+            zipOut.putNextEntry(zipEntry);
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                zipOut.write(buffer, 0, len);
+            }
+            zipOut.closeEntry();
+            log.debug("Added blob {} as {} to ZIP", blobName, entryName);
+        }
+    }
+
+    private String deriveFrameEntryName(Long videoId, String fullBlobName) {
+        String expectedPrefix = videoId + "/frames/";
+        if (fullBlobName.startsWith(expectedPrefix)) {
+            return "frames/" + fullBlobName.substring(expectedPrefix.length());
+        }
+        return "frames/" + fullBlobName;
     }
 }
