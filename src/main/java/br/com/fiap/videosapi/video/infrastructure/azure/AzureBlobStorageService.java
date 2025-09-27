@@ -4,6 +4,7 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobItem;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -68,6 +71,31 @@ public class AzureBlobStorageService {
             log.error("Error deleting file {} from Azure Blob Storage", fileName, e);
             return false;
         }
+    }
+
+    public InputStream openBlobInputStream(String blobName) {
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+        if (!blobClient.exists()) {
+            throw new IllegalArgumentException("Blob not found: " + blobName);
+        }
+        return blobClient.openInputStream();
+    }
+
+    public boolean blobExists(String blobName) {
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        return containerClient.getBlobClient(blobName).exists();
+    }
+
+    public List<String> listBlobsByPrefix(String prefix) {
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        List<String> blobNames = new ArrayList<>();
+        for (BlobItem blobItem : containerClient.listBlobs()) {
+            if (blobItem.getName().startsWith(prefix)) {
+                blobNames.add(blobItem.getName());
+            }
+        }
+        return blobNames;
     }
 
     private void createContainerIfNotExists() {
