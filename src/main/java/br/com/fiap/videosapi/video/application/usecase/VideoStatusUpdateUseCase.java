@@ -4,6 +4,6 @@ import br.com.fiap.videosapi.video.common.domain.dto.event.VideoStatusUpdateEven
 import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
 
 public interface VideoStatusUpdateUseCase {
-    void updateVideoStatus(Long videoId, VideoStatus newStatus, String message, String processedBy);
+    void updateVideoStatus(Long videoId, String status);
     void processStatusUpdateEvent(VideoStatusUpdateEvent event);
 }

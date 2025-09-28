@@ -55,24 +55,9 @@ class VideoStatusUpdateUseCaseImplTest {
 
         eventoSucesso = VideoStatusUpdateEvent.builder()
                 .videoId(1L)
-                .newStatus(VideoStatus.PROCESSED)
-                .message("Processamento concluído com sucesso")
-                .processedBy("processing-service")
                 .userId(USER_ID)
+                .status("SUCCESS")
                 .build();
-    }
-
-    @Test
-    @DisplayName("Deve atualizar status do vídeo com sucesso")
-    void deveAtualizarStatusDoVideoComSucesso() {
-        when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
-        when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
-
-        videoStatusUpdateUseCase.updateVideoStatus(1L, VideoStatus.PROCESSING, "Iniciando processamento", "service");
-
-        verify(videoRepository).findById(1L);
-        verify(videoRepository).save(videoPendente);
-        assertEquals(VideoStatus.PROCESSING, videoPendente.getStatus());
     }
 
     @Test
@@ -81,7 +66,7 @@ class VideoStatusUpdateUseCaseImplTest {
         when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
         when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
 
-        videoStatusUpdateUseCase.updateVideoStatus(1L, VideoStatus.PROCESSED, "Processamento concluído", "service");
+        videoStatusUpdateUseCase.updateVideoStatus(1L, "SUCCESS");
 
         verify(videoRepository).save(videoPendente);
         assertEquals(VideoStatus.PROCESSED, videoPendente.getStatus());
@@ -94,10 +79,10 @@ class VideoStatusUpdateUseCaseImplTest {
         when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
         when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
 
-        videoStatusUpdateUseCase.updateVideoStatus(1L, VideoStatus.PROCESSING, "Em processamento", "service");
+        videoStatusUpdateUseCase.updateVideoStatus(1L, "ERROR");
 
         verify(videoRepository).save(videoPendente);
-        assertEquals(VideoStatus.PROCESSING, videoPendente.getStatus());
+        assertEquals(VideoStatus.FAILED, videoPendente.getStatus());
         assertNull(videoPendente.getProcessedAt());
     }
 
@@ -107,7 +92,7 @@ class VideoStatusUpdateUseCaseImplTest {
         when(videoRepository.findById(999L)).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                videoStatusUpdateUseCase.updateVideoStatus(999L, VideoStatus.PROCESSED, "Teste", "service")
+                videoStatusUpdateUseCase.updateVideoStatus(999L, "SUCCESS")
         );
 
         assertEquals("Video not found with ID: 999", exception.getMessage());
@@ -135,10 +120,8 @@ class VideoStatusUpdateUseCaseImplTest {
 
         VideoStatusUpdateEvent eventoInvalido = VideoStatusUpdateEvent.builder()
                 .videoId(999L)
-                .newStatus(VideoStatus.PROCESSED)
-                .message("Teste")
-                .processedBy("service")
                 .userId(USER_ID)
+                .status("ERROR")
                 .build();
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
@@ -149,24 +132,12 @@ class VideoStatusUpdateUseCaseImplTest {
     }
 
     @Test
-    @DisplayName("Deve atualizar status de PENDING para PROCESSING")
-    void deveAtualizarStatusDePendingParaProcessing() {
-        when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
-        when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
-
-        videoStatusUpdateUseCase.updateVideoStatus(1L, VideoStatus.PROCESSING, "Iniciando processamento", "service");
-
-        assertEquals(VideoStatus.PROCESSING, videoPendente.getStatus());
-        verify(videoRepository).save(videoPendente);
-    }
-
-    @Test
     @DisplayName("Deve atualizar status de PROCESSING para PROCESSED")
     void deveAtualizarStatusDeProcessingParaProcessed() {
         when(videoRepository.findById(2L)).thenReturn(Optional.of(videoProcessando));
         when(videoRepository.save(any(Video.class))).thenReturn(videoProcessando);
 
-        videoStatusUpdateUseCase.updateVideoStatus(2L, VideoStatus.PROCESSED, "Processamento concluído", "service");
+        videoStatusUpdateUseCase.updateVideoStatus(2L, "SUCCESS");
 
         assertEquals(VideoStatus.PROCESSED, videoProcessando.getStatus());
         assertNotNull(videoProcessando.getProcessedAt());
@@ -179,22 +150,11 @@ class VideoStatusUpdateUseCaseImplTest {
         when(videoRepository.findById(2L)).thenReturn(Optional.of(videoProcessando));
         when(videoRepository.save(any(Video.class))).thenReturn(videoProcessando);
 
-        videoStatusUpdateUseCase.updateVideoStatus(2L, VideoStatus.FAILED, "Erro no processamento", "service");
+        videoStatusUpdateUseCase.updateVideoStatus(2L, "ERROR");
 
         assertEquals(VideoStatus.FAILED, videoProcessando.getStatus());
         assertNull(videoProcessando.getProcessedAt());
         verify(videoRepository).save(videoProcessando);
-    }
-
-    @Test
-    @DisplayName("Deve processar evento com todas as informações do evento")
-    void deveProcessarEventoComTodasAsInformacoesDoEvento() {
-        when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
-        when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
-
-        videoStatusUpdateUseCase.processStatusUpdateEvent(eventoSucesso);
-
-        assertEquals(eventoSucesso.getNewStatus(), videoPendente.getStatus());
     }
 
     @Test
@@ -207,7 +167,7 @@ class VideoStatusUpdateUseCaseImplTest {
         when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
         when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
 
-        videoStatusUpdateUseCase.updateVideoStatus(1L, VideoStatus.PROCESSED, "Concluído", "service");
+        videoStatusUpdateUseCase.updateVideoStatus(1L, "SUCCESS");
 
         assertEquals(nomeOriginal, videoPendente.getOriginalFileName());
         assertEquals(tamanhoOriginal, videoPendente.getFileSize());
@@ -222,10 +182,8 @@ class VideoStatusUpdateUseCaseImplTest {
 
         VideoStatusUpdateEvent eventoUserDivergente = VideoStatusUpdateEvent.builder()
                 .videoId(1L)
-                .newStatus(VideoStatus.PROCESSED)
-                .message("Teste")
-                .processedBy("service")
                 .userId("outro-user")
+                .status("SUCCESS")
                 .build();
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
@@ -235,28 +193,12 @@ class VideoStatusUpdateUseCaseImplTest {
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando userId não estiver presente no evento")
-    void deveLancarExcecaoQuandoUserIdAusente() {
-        VideoStatusUpdateEvent eventoSemUser = VideoStatusUpdateEvent.builder()
-                .videoId(1L)
-                .newStatus(VideoStatus.PROCESSED)
-                .message("Teste")
-                .processedBy("service")
-                .build();
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                videoStatusUpdateUseCase.processStatusUpdateEvent(eventoSemUser));
-        assertTrue(ex.getMessage().contains("Missing userId"));
-        verify(videoRepository, never()).save(any());
-    }
-
-    @Test
     @DisplayName("Deve chamar repository findById e save exatamente uma vez")
     void deveChamarRepositoryFindByIdESaveExatamenteUmaVez() {
         when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
         when(videoRepository.save(any(Video.class))).thenReturn(videoPendente);
 
-        videoStatusUpdateUseCase.updateVideoStatus(1L, VideoStatus.PROCESSING, "Teste", "service");
+        videoStatusUpdateUseCase.updateVideoStatus(1L, "SUCCESS");
 
         verify(videoRepository, times(1)).findById(1L);
         verify(videoRepository, times(1)).save(videoPendente);
