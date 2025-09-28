@@ -45,13 +45,14 @@ class VideoStatusUpdateConsumerTest {
                 .newStatus(VideoStatus.PROCESSED)
                 .message("Processamento concluído com sucesso")
                 .processedBy("processing-service")
+                .userId("user-123")
                 .build();
     }
 
     @Test
     @DisplayName("Deve consumir evento de atualização de status com sucesso")
     void deveConsumirEventoDeAtualizacaoDeStatusComSucesso() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"message\":\"Processamento concluído\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"message\":\"Processamento concluído\",\"userId\":\"user-123\"}";
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
@@ -66,12 +67,13 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve processar evento com status PROCESSING")
     void deveProcessarEventoComStatusProcessing() throws JsonProcessingException {
-        String message = "{\"videoId\":2,\"newStatus\":\"PROCESSING\"}";
+        String message = "{\"videoId\":2,\"newStatus\":\"PROCESSING\",\"userId\":\"user-abc\"}";
 
         VideoStatusUpdateEvent eventProcessing = VideoStatusUpdateEvent.builder()
                 .videoId(2L)
                 .newStatus(VideoStatus.PROCESSING)
                 .message("Iniciando processamento")
+                .userId("user-abc")
                 .build();
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -86,12 +88,13 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve processar evento com status ERROR")
     void deveProcessarEventoComStatusError() throws JsonProcessingException {
-        String message = "{\"videoId\":3,\"newStatus\":\"ERROR\"}";
+        String message = "{\"videoId\":3,\"newStatus\":\"ERROR\",\"userId\":\"user-xyz\"}";
 
         VideoStatusUpdateEvent eventError = VideoStatusUpdateEvent.builder()
                 .videoId(3L)
                 .newStatus(VideoStatus.FAILED)
                 .message("Falha no processamento")
+                .userId("user-xyz")
                 .build();
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -126,7 +129,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve lançar exceção e não fazer acknowledge quando ocorrer erro no use case")
     void deveLancarExcecaoENaoFazerAcknowledgeQuandoOcorrerErroNoUseCase() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
         RuntimeException useCaseException = new RuntimeException("Erro no processamento");
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -148,7 +151,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve processar mensagem de diferentes tópicos")
     void deveProcessarMensagemDeDiferentesTopicos() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
         String customTopic = "custom-video-status-topic";
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -163,7 +166,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve processar mensagem de diferentes partições")
     void deveProcessarMensagemDeDiferentesParticoes() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
         int customPartition = 5;
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -178,7 +181,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve processar mensagem com diferentes offsets")
     void deveProcessarMensagemComDiferentesOffsets() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
         long customOffset = 999999L;
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -193,11 +196,12 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve processar evento com videoId grande")
     void deveProcessarEventoComVideoIdGrande() throws JsonProcessingException {
-        String message = "{\"videoId\":999999999,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":999999999,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
 
         VideoStatusUpdateEvent eventIdGrande = VideoStatusUpdateEvent.builder()
                 .videoId(999999999L)
                 .newStatus(VideoStatus.PROCESSED)
+                .userId("user-123")
                 .build();
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -228,7 +232,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve chamar ObjectMapper readValue exatamente uma vez")
     void deveChamarObjectMapperReadValueExatamenteUmaVez() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
@@ -241,7 +245,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve chamar use case processStatusUpdateEvent exatamente uma vez")
     void deveChamarUseCaseProcessStatusUpdateEventExatamenteUmaVez() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
@@ -254,7 +258,7 @@ class VideoStatusUpdateConsumerTest {
     @Test
     @DisplayName("Deve propagar exceção original quando ocorrer erro inesperado")
     void devePropagarExcecaoOriginalQuandoOcorrerErroInesperado() throws JsonProcessingException {
-        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\"}";
+        String message = "{\"videoId\":1,\"newStatus\":\"PROCESSED\",\"userId\":\"user-123\"}";
         IllegalStateException originalException = new IllegalStateException("Estado inválido");
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))

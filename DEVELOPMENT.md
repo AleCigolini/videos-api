@@ -1,3 +1,9 @@
+### Header de Escopo de Usuário
+
+- Todos os endpoints de negócio requerem o header `x-cliente-id`.
+- O interceptor `UserContextInterceptor` rejeita requisições sem esse header (exceto `/actuator`, `/swagger`, `/v3/api-docs`).
+- O header é espelhado nas respostas.
+
 # Videos API - Development Environment
 
 Este documento descreve como configurar e usar o ambiente de desenvolvimento local com Docker, Redis para cache e mocks para as integrações externas.
@@ -105,6 +111,7 @@ AZURE_STORAGE_CONTAINER_NAME=videos
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/videos/upload \
+  -H "x-cliente-id: user-123" \
   -F "file=@/path/to/video.mp4" \
   -H "Content-Type: multipart/form-data"
 ```
@@ -112,20 +119,20 @@ curl -X POST http://localhost:8080/api/v1/videos/upload \
 ### 2. Listar Todos os Vídeos
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/videos
+curl -X GET http://localhost:8080/api/v1/videos -H "x-cliente-id: user-123"
 ```
 
 ### 3. Listar Vídeos por Status
 
 ```bash
 # Status disponíveis: UPLOADED, PROCESSING, PROCESSED, FAILED
-curl -X GET http://localhost:8080/api/v1/videos/status/UPLOADED
+curl -X GET http://localhost:8080/api/v1/videos/status/UPLOADED -H "x-cliente-id: user-123"
 ```
 
 ### 4. Consultar Vídeo Específico
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/videos/1
+curl -X GET http://localhost:8080/api/v1/videos/1 -H "x-cliente-id: user-123"
 ```
 
 ### 5. Simular Atualização de Status via Kafka

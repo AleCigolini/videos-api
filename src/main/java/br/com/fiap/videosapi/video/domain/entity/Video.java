@@ -38,6 +38,9 @@ public class Video {
     @Column(nullable = false)
     private String containerName;
 
+    @Column(nullable = false)
+    private String userId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VideoStatus status;

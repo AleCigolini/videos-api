@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import br.com.fiap.videosapi.core.context.UserContext;
 
 @Service
 @RequiredArgsConstructor
@@ -21,30 +22,33 @@ public class VideoListUseCaseImpl implements VideoListUseCase {
     private final VideoRepository videoRepository;
 
     @Override
-    @Cacheable(value = "videos", key = "'all'")
+    @Cacheable(value = "videos", key = "'all:' + T(br.com.fiap.videosapi.core.context.UserContext).getUserId()")
     public List<VideoListResponse> listAllVideos() {
-        log.info("Fetching all videos from database");
-        List<Video> videos = videoRepository.findAll();
+        String userId = UserContext.getUserId();
+        log.info("Fetching all videos from database for userId={}", userId);
+        List<Video> videos = videoRepository.findAllByUserId(userId);
         return videos.stream()
                 .map(this::mapToVideoListResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(value = "videos", key = "'status_' + #status.name()")
+    @Cacheable(value = "videos", key = "'status_' + #status.name() + ':' + T(br.com.fiap.videosapi.core.context.UserContext).getUserId()")
     public List<VideoListResponse> listVideosByStatus(VideoStatus status) {
-        log.info("Fetching videos with status: {}", status);
-        List<Video> videos = videoRepository.findByStatus(status);
+        String userId = UserContext.getUserId();
+        log.info("Fetching videos with status: {} for userId={}", status, userId);
+        List<Video> videos = videoRepository.findByStatusAndUserId(status, userId);
         return videos.stream()
                 .map(this::mapToVideoListResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(value = "video", key = "#id")
+    @Cacheable(value = "video", key = "#id + ':' + T(br.com.fiap.videosapi.core.context.UserContext).getUserId()")
     public VideoListResponse getVideoById(Long id) {
-        log.info("Fetching video with ID: {}", id);
-        Video video = videoRepository.findById(id)
+        String userId = UserContext.getUserId();
+        log.info("Fetching video with ID: {} for userId={}", id, userId);
+        Video video = videoRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Video not found with ID: " + id));
         return mapToVideoListResponse(video);
     }

@@ -20,19 +20,22 @@ public class VideoStatusUpdateEvent {
     private String message;
     private LocalDateTime timestamp;
     private String processedBy;
+    private String userId;
 
     public static VideoStatusUpdateEvent createStatusUpdateEvent(
             Long videoId,
             VideoStatus previousStatus,
             VideoStatus newStatus,
             String message,
-            String processedBy) {
+            String processedBy,
+            String userId) {
         return VideoStatusUpdateEvent.builder()
                 .videoId(videoId)
                 .previousStatus(previousStatus)
                 .newStatus(newStatus)
                 .message(message)
                 .processedBy(processedBy)
+                .userId(userId)
                 .timestamp(LocalDateTime.now())
                 .build();
     }

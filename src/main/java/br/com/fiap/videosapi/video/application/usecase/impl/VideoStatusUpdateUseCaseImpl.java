@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -53,11 +54,25 @@ public class VideoStatusUpdateUseCaseImpl implements VideoStatusUpdateUseCase {
         log.info("Processing status update event for video ID: {}", event.getVideoId());
         
         try {
+            if (event.getUserId() == null || event.getUserId().isBlank()) {
+                throw new IllegalArgumentException("Missing userId in VideoStatusUpdateEvent");
+            }
+
+            Optional<Video> videoOpt = videoRepository.findById(event.getVideoId());
+            if (videoOpt.isEmpty()) {
+                throw new RuntimeException("Video not found with ID: " + event.getVideoId());
+            }
+
+            Video video = videoOpt.get();
+            if (!event.getUserId().equals(video.getUserId())) {
+                throw new IllegalArgumentException("User mismatch for video ID: " + event.getVideoId());
+            }
+
             updateVideoStatus(
-                event.getVideoId(),
-                event.getNewStatus(),
-                event.getMessage(),
-                event.getProcessedBy()
+                    event.getVideoId(),
+                    event.getNewStatus(),
+                    event.getMessage(),
+                    event.getProcessedBy()
             );
             
             log.info("Status update event processed successfully for video ID: {}", event.getVideoId());

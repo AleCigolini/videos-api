@@ -1,3 +1,27 @@
+## 🔐 Escopo por Usuário (x-cliente-id)
+
+- Todos os endpoints de negócio exigem o header `x-cliente-id`.
+- As operações de upload, listagem e consulta são escopadas por esse usuário.
+- O cabeçalho é refletido nas respostas para facilitar o tracing.
+
+### Exemplos com curl
+
+```bash
+# Upload
+curl -X POST http://localhost:8080/api/v1/videos/upload \
+  -H "x-cliente-id: user-123" \
+  -F "files=@/path/to/video.mp4" \
+  -H "Content-Type: multipart/form-data"
+
+# Listar todos
+curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos
+
+# Listar por status
+curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos/status/UPLOADED
+
+# Buscar por ID
+curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos/1
+```
 # API de Vídeos
 
 Uma aplicação Spring Boot robusta para upload e gerenciamento de vídeos com integração Azure Blob Storage, streaming de eventos Kafka e ambiente de desenvolvimento Docker completo.
@@ -165,6 +189,7 @@ mvn test -Dspring.profiles.active=test
 ```http
 POST /api/v1/videos/upload
 Content-Type: multipart/form-data
+x-cliente-id: <seu_user_id>
 
 Parâmetros:
 - file: Arquivo de vídeo (máx 500MB)
@@ -178,6 +203,7 @@ Resposta:
 ### Listar Todos os Vídeos
 ```http
 GET /api/v1/videos
+x-cliente-id: <seu_user_id>
 
 Resposta:
 - 200: Lista de vídeos com informações de status e processamento
@@ -186,6 +212,7 @@ Resposta:
 ### Listar Vídeos por Status
 ```http
 GET /api/v1/videos/status/{status}
+x-cliente-id: <seu_user_id>
 
 Parâmetros:
 - status: UPLOADED, PROCESSING, PROCESSED, FAILED
@@ -197,6 +224,7 @@ Resposta:
 ### Consultar Vídeo por ID
 ```http
 GET /api/v1/videos/{id}
+x-cliente-id: <seu_user_id>
 
 Parâmetros:
 - id: ID do vídeo

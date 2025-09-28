@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import br.com.fiap.videosapi.core.context.UserContext;
 
 @Service
 @RequiredArgsConstructor
@@ -85,6 +86,7 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
     }
 
     private Video createVideoFromUpload(MultipartFile file, AzureBlobUploadResult uploadResult) {
+        String userId = UserContext.getUserId();
         return Video.builder()
                 .originalFileName(file.getOriginalFilename())
                 .storedFileName(uploadResult.getFileName())
@@ -92,6 +94,7 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
                 .fileSize(file.getSize())
                 .azureBlobUrl(uploadResult.getBlobUrl())
                 .containerName(uploadResult.getContainerName())
+                .userId(userId)
                 .status(VideoStatus.UPLOADED)
                 .build();
     }
@@ -106,6 +109,7 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
                 .fileSize(video.getFileSize())
                 .containerName(video.getContainerName())
                 .connectionString(connectionString)
+                .userId(video.getUserId())
                 .status(video.getStatus())
                 .uploadedAt(video.getUploadedAt())
                 .eventType("VIDEO_UPLOAD_SUCCESS")

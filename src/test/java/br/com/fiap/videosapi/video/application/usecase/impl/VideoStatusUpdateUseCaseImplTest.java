@@ -31,6 +31,7 @@ class VideoStatusUpdateUseCaseImplTest {
     private Video videoPendente;
     private Video videoProcessando;
     private VideoStatusUpdateEvent eventoSucesso;
+    private static final String USER_ID = "user-123";
 
     @BeforeEach
     void setUp() {
@@ -40,6 +41,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .status(VideoStatus.PROCESSING)
                 .fileSize(1024L)
                 .uploadedAt(LocalDateTime.now().minusHours(1))
+                .userId(USER_ID)
                 .build();
 
         videoProcessando = Video.builder()
@@ -48,6 +50,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .status(VideoStatus.PROCESSING)
                 .fileSize(2048L)
                 .uploadedAt(LocalDateTime.now().minusHours(2))
+                .userId(USER_ID)
                 .build();
 
         eventoSucesso = VideoStatusUpdateEvent.builder()
@@ -55,6 +58,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .newStatus(VideoStatus.PROCESSED)
                 .message("Processamento concluído com sucesso")
                 .processedBy("processing-service")
+                .userId(USER_ID)
                 .build();
     }
 
