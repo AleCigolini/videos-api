@@ -36,8 +36,13 @@ public class VideoRestControllerImpl implements VideoRestController {
 
     @Override
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadVideos(@RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<?> uploadVideos(
+            @RequestParam("files") List<MultipartFile> files,
+            HttpServletRequest request
+    ) {
         log.info("Received request to upload {} video(s)", files.size());
+
+        String userId = request.getHeader("x-cliente-id");
 
         if (files.isEmpty() || files.stream().allMatch(MultipartFile::isEmpty)) {
             log.warn("No files provided in the upload request");
@@ -45,7 +50,7 @@ public class VideoRestControllerImpl implements VideoRestController {
         }
 
         try {
-            List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files);
+            List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files, userId);
 
             boolean allSuccessful = responses.stream()
                     .allMatch(response -> response.getId() != null);
@@ -106,8 +111,8 @@ public class VideoRestControllerImpl implements VideoRestController {
     ) {
         log.info("Received request to download frames.zip for video {}", id);
         try {
-            String idCliente = request.getHeader("x-cliente-id");
-            VideoDownloadData data = videoDownloadUseCase.prepareDownload(id, idCliente);
+            String userId = request.getHeader("x-cliente-id");
+            VideoDownloadData data = videoDownloadUseCase.prepareDownload(id, userId);
 
             StreamingResponseBody responseBody = outputStream -> {
                 try (InputStream in = azureBlobStorageService.openBlobInputStream(data.getVideoBlobName())) {

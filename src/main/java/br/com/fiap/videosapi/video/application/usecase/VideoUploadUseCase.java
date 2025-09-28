@@ -6,6 +6,5 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface VideoUploadUseCase {
-    List<VideoUploadResponse> uploadVideos(List<MultipartFile> files);
-    VideoUploadResponse uploadVideo(MultipartFile file);
+    List<VideoUploadResponse> uploadVideos(List<MultipartFile> files, String idCliente);
 }

@@ -18,11 +18,11 @@ public class VideoDownloadUseCaseImpl implements VideoDownloadUseCase {
     private final AzureBlobStorageService azureBlobStorageService;
 
     @Override
-    public VideoDownloadData prepareDownload(Long videoId, String idCliente) {
+    public VideoDownloadData prepareDownload(Long videoId, String userId) {
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() -> new IllegalArgumentException("Video not found with id: " + videoId));
 
-        String framesZipBlobName = idCliente + "/" + videoId + "/frames/frames.zip";
+        String framesZipBlobName = userId + "/" + videoId + "/frames/frames.zip";
         if (!azureBlobStorageService.blobExists(framesZipBlobName)) {
             throw new IllegalArgumentException("Arquivo frames.zip não encontrado para o vídeo: " + videoId);
         }

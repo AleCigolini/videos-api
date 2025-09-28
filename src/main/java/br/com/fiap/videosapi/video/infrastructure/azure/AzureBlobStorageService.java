@@ -32,16 +32,17 @@ public class AzureBlobStorageService {
         createContainerIfNotExists();
     }
 
-    public AzureBlobUploadResult uploadVideo(MultipartFile file) {
+    public AzureBlobUploadResult uploadVideo(MultipartFile file, Long idVideo) {
         try {
-            String fileName = generateUniqueFileName(file.getOriginalFilename());
+            String originalFileName = file.getOriginalFilename();
+            String fileName = idVideo + "/" + originalFileName;
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
             BlobClient blobClient = containerClient.getBlobClient(fileName);
 
             try (InputStream inputStream = file.getInputStream()) {
                 blobClient.upload(inputStream, file.getSize(), true);
                 log.info("Successfully uploaded file {} to Azure Blob Storage", fileName);
-                
+
                 return AzureBlobUploadResult.builder()
                         .fileName(fileName)
                         .blobUrl(blobClient.getBlobUrl())
@@ -108,13 +109,5 @@ public class AzureBlobStorageService {
         } catch (Exception e) {
             log.error("Error creating container: {}", containerName, e);
         }
-    }
-
-    private String generateUniqueFileName(String originalFileName) {
-        String extension = "";
-        if (originalFileName != null && originalFileName.contains(".")) {
-            extension = originalFileName.substring(originalFileName.lastIndexOf("."));
-        }
-        return UUID.randomUUID() + extension;
     }
 }
