@@ -4,10 +4,12 @@
 
 Este documento apresenta a implementação completa da **Videos API**, uma aplicação Spring Boot robusta para upload e gerenciamento de vídeos com integração Azure Blob Storage, streaming de eventos Kafka e ambiente de desenvolvimento Docker completo.
 
+> Importante: Todos os endpoints de negócio exigem o header `x-cliente-id`. As consultas, uploads e eventos são escopados por usuário.
+
 ## ✅ Funcionalidades Implementadas
 
 ### 1. **Upload de Vídeos**
-- **Endpoint**: `POST /api/v1/videos/upload`
+- **Endpoint**: `POST /api/v1/videos/upload` (header: `x-cliente-id` obrigatório)
 - **Funcionalidades**:
   - Upload de arquivos de vídeo (até 500MB)
   - Validação de tipo MIME usando Apache Tika
@@ -18,7 +20,7 @@ Este documento apresenta a implementação completa da **Videos API**, uma aplic
   - Publicação de evento Kafka após upload bem-sucedido
 
 ### 2. **Listagem de Arquivos Processados**
-- **Endpoints**:
+- **Endpoints** (todos exigem `x-cliente-id`):
   - `GET /api/v1/videos` - Lista todos os vídeos
   - `GET /api/v1/videos/status/{status}` - Filtra por status
   - `GET /api/v1/videos/{id}` - Consulta vídeo específico
@@ -186,6 +188,7 @@ CREATE TABLE videos (
   "fileSize": 1048576,
   "azureBlobUrl": "https://storage.blob.core.windows.net/videos/uuid-video.mp4",
   "containerName": "videos",
+  "userId": "user-123",
   "status": "UPLOADED",
   "uploadedAt": "2025-09-06T10:44:00",
   "eventType": "VIDEO_UPLOAD_SUCCESS"
@@ -201,6 +204,7 @@ CREATE TABLE videos (
   "newStatus": "PROCESSING",
   "message": "Video processing started",
   "processedBy": "video-processor-service",
+  "userId": "user-123",
   "timestamp": "2025-09-06T10:45:00"
 }
 ```
@@ -239,6 +243,7 @@ videos:status_{status}  # Lista filtrada por status (TTL: 10min)
 ```http
 POST /api/v1/videos/upload
 Content-Type: multipart/form-data
+x-cliente-id: <seu_user_id>
 
 Body: file (video file, max 500MB)
 
@@ -259,6 +264,7 @@ Response 201:
 ### Listar Todos os Vídeos
 ```http
 GET /api/v1/videos
+x-cliente-id: <seu_user_id>
 
 Response 200:
 [
@@ -278,6 +284,7 @@ Response 200:
 ```http
 GET /api/v1/videos/status/{status}
 # status: UPLOADED, PROCESSING, PROCESSED, FAILED
+x-cliente-id: <seu_user_id>
 
 Response 200: [array of videos]
 ```
@@ -285,6 +292,7 @@ Response 200: [array of videos]
 ### Consultar Vídeo Específico
 ```http
 GET /api/v1/videos/{id}
+x-cliente-id: <seu_user_id>
 
 Response 200: {video object}
 Response 404: Video not found
@@ -320,16 +328,17 @@ curl http://localhost:8080/actuator/health
 ```bash
 # Upload de vídeo
 curl -X POST http://localhost:8080/api/v1/videos/upload \
+  -H "x-cliente-id: user-123" \
   -F "file=@test-video.mp4"
 
 # Listar vídeos
-curl http://localhost:8080/api/v1/videos
+curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos
 
 # Simular atualização de status via Kafka UI
 # http://localhost:8081
 
 # Verificar atualização
-curl http://localhost:8080/api/v1/videos/1
+curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos/1
 ```
 
 ## 📈 Monitoramento

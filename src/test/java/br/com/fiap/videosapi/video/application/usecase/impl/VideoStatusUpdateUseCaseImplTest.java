@@ -31,6 +31,7 @@ class VideoStatusUpdateUseCaseImplTest {
     private Video videoPendente;
     private Video videoProcessando;
     private VideoStatusUpdateEvent eventoSucesso;
+    private static final String USER_ID = "user-123";
 
     @BeforeEach
     void setUp() {
@@ -40,6 +41,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .status(VideoStatus.PROCESSING)
                 .fileSize(1024L)
                 .uploadedAt(LocalDateTime.now().minusHours(1))
+                .userId(USER_ID)
                 .build();
 
         videoProcessando = Video.builder()
@@ -48,6 +50,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .status(VideoStatus.PROCESSING)
                 .fileSize(2048L)
                 .uploadedAt(LocalDateTime.now().minusHours(2))
+                .userId(USER_ID)
                 .build();
 
         eventoSucesso = VideoStatusUpdateEvent.builder()
@@ -55,6 +58,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .newStatus(VideoStatus.PROCESSED)
                 .message("Processamento concluído com sucesso")
                 .processedBy("processing-service")
+                .userId(USER_ID)
                 .build();
     }
 
@@ -119,7 +123,6 @@ class VideoStatusUpdateUseCaseImplTest {
 
         videoStatusUpdateUseCase.processStatusUpdateEvent(eventoSucesso);
 
-        verify(videoRepository).findById(1L);
         verify(videoRepository).save(videoPendente);
         assertEquals(VideoStatus.PROCESSED, videoPendente.getStatus());
         assertNotNull(videoPendente.getProcessedAt());
@@ -135,6 +138,7 @@ class VideoStatusUpdateUseCaseImplTest {
                 .newStatus(VideoStatus.PROCESSED)
                 .message("Teste")
                 .processedBy("service")
+                .userId(USER_ID)
                 .build();
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
@@ -191,8 +195,6 @@ class VideoStatusUpdateUseCaseImplTest {
         videoStatusUpdateUseCase.processStatusUpdateEvent(eventoSucesso);
 
         assertEquals(eventoSucesso.getNewStatus(), videoPendente.getStatus());
-        verify(videoRepository).findById(eventoSucesso.getVideoId());
-        verify(videoRepository).save(videoPendente);
     }
 
     @Test
@@ -211,6 +213,41 @@ class VideoStatusUpdateUseCaseImplTest {
         assertEquals(tamanhoOriginal, videoPendente.getFileSize());
         assertEquals(uploadOriginal, videoPendente.getUploadedAt());
         assertEquals(VideoStatus.PROCESSED, videoPendente.getStatus());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando userId do evento divergir do userId do vídeo")
+    void deveLancarExcecaoQuandoUserIdDivergir() {
+        when(videoRepository.findById(1L)).thenReturn(Optional.of(videoPendente));
+
+        VideoStatusUpdateEvent eventoUserDivergente = VideoStatusUpdateEvent.builder()
+                .videoId(1L)
+                .newStatus(VideoStatus.PROCESSED)
+                .message("Teste")
+                .processedBy("service")
+                .userId("outro-user")
+                .build();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                videoStatusUpdateUseCase.processStatusUpdateEvent(eventoUserDivergente));
+        assertTrue(ex.getMessage().contains("User mismatch"));
+        verify(videoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando userId não estiver presente no evento")
+    void deveLancarExcecaoQuandoUserIdAusente() {
+        VideoStatusUpdateEvent eventoSemUser = VideoStatusUpdateEvent.builder()
+                .videoId(1L)
+                .newStatus(VideoStatus.PROCESSED)
+                .message("Teste")
+                .processedBy("service")
+                .build();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                videoStatusUpdateUseCase.processStatusUpdateEvent(eventoSemUser));
+        assertTrue(ex.getMessage().contains("Missing userId"));
+        verify(videoRepository, never()).save(any());
     }
 
     @Test

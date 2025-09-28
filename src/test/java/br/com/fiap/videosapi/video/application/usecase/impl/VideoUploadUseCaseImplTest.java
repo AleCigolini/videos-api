@@ -87,6 +87,7 @@ class VideoUploadUseCaseImplTest {
         when(azureBlobStorageService.uploadVideo(any(), any())).thenReturn(uploadResult);
         Video video = Video.builder()
                 .id(1L)
+                .userId("user123")
                 .originalFileName("video.mp4")
                 .storedFileName("stored.mp4")
                 .contentType("video/mp4")
@@ -98,7 +99,7 @@ class VideoUploadUseCaseImplTest {
                 .build();
         when(videoRepository.save(any())).thenReturn(video);
 
-        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile, "user123");
+        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile);
 
         assertNotNull(response);
         assertEquals("video.mp4", response.getOriginalFileName());
@@ -115,7 +116,7 @@ class VideoUploadUseCaseImplTest {
     @DisplayName("Deve retornar erro para arquivo inválido (vazio)")
     void deveRetornarErroParaArquivoVazio() {
         when(multipartFile.isEmpty()).thenReturn(true);
-        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile, "user123");
+        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile);
         assertNotNull(response);
         assertTrue(response.getMessage().toLowerCase().contains("empty"));
     }
@@ -127,7 +128,7 @@ class VideoUploadUseCaseImplTest {
         when(multipartFile.getSize()).thenReturn(100L);
         when(multipartFile.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[1]));
         when(tika.detect(any(ByteArrayInputStream.class))).thenReturn("image/png");
-        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile, "user123");
+        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile);
         assertNotNull(response);
         assertTrue(response.getMessage().contains("Invalid file type"));
     }
@@ -137,7 +138,7 @@ class VideoUploadUseCaseImplTest {
     void deveRetornarErroParaArquivoGrande() {
         when(multipartFile.isEmpty()).thenReturn(false);
         when(multipartFile.getSize()).thenReturn(600L * 1024 * 1024);
-        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile, "user123");
+        VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile);
         assertNotNull(response);
         assertTrue(response.getMessage().contains("exceeds"));
     }
@@ -146,7 +147,7 @@ class VideoUploadUseCaseImplTest {
     @DisplayName("Deve lançar exceção para lista de arquivos vazia")
     void deveLancarExcecaoParaListaVazia() {
         Exception ex = assertThrows(IllegalArgumentException.class, () ->
-                videoUploadUseCase.uploadVideos(Collections.emptyList(), "user123"));
+                videoUploadUseCase.uploadVideos(Collections.emptyList()));
         assertTrue(ex.getMessage().contains("No files"));
     }
 }

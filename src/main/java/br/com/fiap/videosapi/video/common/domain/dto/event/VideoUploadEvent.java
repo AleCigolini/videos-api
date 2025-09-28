@@ -22,10 +22,10 @@ public class VideoUploadEvent {
     private String azureBlobUrl;
     private String containerName;
     private String connectionString;
+    private String userId;
     private VideoStatus status;
     private LocalDateTime uploadedAt;
     private String eventType;
-    private String userId;
 
     public static VideoUploadEvent createUploadSuccessEvent(Long videoId, String originalFileName,
                                                             String storedFileName, String contentType,

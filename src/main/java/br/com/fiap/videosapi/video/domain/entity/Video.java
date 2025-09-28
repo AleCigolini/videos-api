@@ -21,7 +21,7 @@ public class Video {
     private Long id;
 
     @Column(nullable = false)
-    private String idCliente;
+    private String userId;
 
     @Column(nullable = false)
     private String originalFileName;
