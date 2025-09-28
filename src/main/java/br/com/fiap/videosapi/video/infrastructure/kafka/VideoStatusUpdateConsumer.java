@@ -44,14 +44,12 @@ public class VideoStatusUpdateConsumer {
             
             videoStatusUpdateUseCase.processStatusUpdateEvent(event);
             
-            // Acknowledge the message after successful processing
             acknowledgment.acknowledge();
             
             log.info("Successfully processed status update for video ID: {}", event.getVideoId());
             
         } catch (Exception e) {
             log.error("Error processing video status update message: {}", message, e);
-            // Don't acknowledge on error - message will be retried
             throw new RuntimeException("Failed to process video status update", e);
         }
     }
