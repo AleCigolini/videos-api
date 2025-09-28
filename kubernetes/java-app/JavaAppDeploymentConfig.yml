@@ -20,6 +20,7 @@ spec:
       containers:
         - name: videos-api
           image: alecigolini/hackaton-videosapi:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
