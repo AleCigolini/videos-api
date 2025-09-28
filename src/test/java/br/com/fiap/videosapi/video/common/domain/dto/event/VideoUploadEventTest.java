@@ -30,7 +30,7 @@ class VideoUploadEventTest {
 
         assertNotNull(event);
         assertEquals(videoId, event.getVideoId());
-        assertEquals(originalFileName, event.getOriginalFileName());
+        assertEquals(originalFileName, event.getFileName());
         assertEquals(storedFileName, event.getStoredFileName());
         assertEquals(contentType, event.getContentType());
         assertEquals(fileSize, event.getFileSize());
@@ -48,7 +48,7 @@ class VideoUploadEventTest {
         LocalDateTime now = LocalDateTime.now();
         VideoUploadEvent event = VideoUploadEvent.builder()
                 .videoId(1L)
-                .originalFileName("file.mp4")
+                .fileName("file.mp4")
                 .storedFileName("stored.mp4")
                 .contentType("video/mp4")
                 .fileSize(100L)
@@ -61,7 +61,7 @@ class VideoUploadEventTest {
                 .build();
 
         assertEquals(1L, event.getVideoId());
-        assertEquals("file.mp4", event.getOriginalFileName());
+        assertEquals("file.mp4", event.getFileName());
         assertEquals("stored.mp4", event.getStoredFileName());
         assertEquals("video/mp4", event.getContentType());
         assertEquals(100L, event.getFileSize());

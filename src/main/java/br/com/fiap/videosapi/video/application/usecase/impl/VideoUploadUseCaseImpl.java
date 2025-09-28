@@ -100,16 +100,9 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
         return VideoUploadEvent.builder()
                 .videoId(video.getId())
                 .userId(video.getUserId())
-                .azureBlobUrl(uploadResult.getBlobUrl())
-                .originalFileName(video.getOriginalFileName())
-                .storedFileName(video.getStoredFileName())
-                .contentType(video.getContentType())
-                .fileSize(video.getFileSize())
+                .fileName(video.getOriginalFileName())
                 .containerName(video.getContainerName())
                 .connectionString(connectionString)
-                .status(video.getStatus())
-                .uploadedAt(video.getUploadedAt())
-                .eventType("VIDEO_UPLOAD_SUCCESS")
                 .build();
     }
 
