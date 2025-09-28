@@ -23,8 +23,8 @@ public class VideoStatusUpdateConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "${kafka.topics.video-status-update:video-status-update-events}",
-            groupId = "${spring.kafka.consumer.group-id:video-api-consumer-group}",
+            topics = "${topics.video-status-update}",
+            groupId = "${spring.kafka.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consumeVideoStatusUpdate(
