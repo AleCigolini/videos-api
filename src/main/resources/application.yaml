@@ -36,6 +36,10 @@ spring:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 1
 
+topics:
+  video-upload: ${KAFKA_TOPIC_VIDEO_UPLOAD:video.uploaded}
+  video-status-update: ${KAFKA_TOPIC_VIDEO_STATUS_UPDATE:video.status}
+
 springdoc:
   api-docs:
     path: /api-docs
