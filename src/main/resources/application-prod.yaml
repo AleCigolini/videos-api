@@ -8,25 +8,6 @@ spring:
     url: jdbc:postgresql://localhost-prod:5432/techchallenge
     user: "root"
     password: "m@_ssq@HJ7<h(+"
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: ${KAFKA_CONSUMER_GROUP_ID:video-api-consumer-group}
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
-      retries: 3
-      properties:
-        enable.idempotence: true
-        max.in.flight.requests.per.connection: 1
-    properties:
-      security.protocol: SASL_SSL
-      sasl.mechanism: PLAIN
-      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG}
-      ssl.endpoint.identification.algorithm: https
 
 
 azure:
