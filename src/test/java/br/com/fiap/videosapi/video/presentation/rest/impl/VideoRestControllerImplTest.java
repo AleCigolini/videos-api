@@ -1,25 +1,32 @@
 package br.com.fiap.videosapi.video.presentation.rest.impl;
 
+import br.com.fiap.videosapi.video.application.usecase.VideoDownloadUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoListUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
+import br.com.fiap.videosapi.video.application.usecase.dto.VideoDownloadData;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoListResponse;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
 import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
+import br.com.fiap.videosapi.video.infrastructure.azure.AzureBlobStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -35,6 +42,12 @@ class VideoRestControllerImplTest {
 
     @MockBean
     private VideoListUseCase videoListUseCase;
+
+    @MockBean
+    private VideoDownloadUseCase videoDownloadUseCase;
+
+    @MockBean
+    private AzureBlobStorageService azureBlobStorageService;
 
     @Test
     @DisplayName("Deve retornar status 400 quando nenhum arquivo for fornecido")
@@ -216,5 +229,45 @@ class VideoRestControllerImplTest {
                 .andExpect(status().isNotFound());
 
         verify(videoListUseCase, times(1)).getVideoById(999L);
+    }
+
+    @Test
+    @DisplayName("Deve realizar download de frames.zip com sucesso")
+    void deveRealizarDownloadComSucesso() throws Exception {
+        byte[] zipContent = "conteudo-zip".getBytes();
+        VideoDownloadData data = VideoDownloadData.builder()
+                .video(null)
+                .videoBlobName("cliente1/1/frames/frames.zip")
+                .zipFileName("frames-video.mp4.zip")
+                .build();
+        when(videoDownloadUseCase.prepareDownload(1L, "cliente1")).thenReturn(data);
+        when(azureBlobStorageService.openBlobInputStream("cliente1/1/frames/frames.zip"))
+                .thenReturn(new ByteArrayInputStream(zipContent));
+
+        MockHttpServletRequestBuilder request = get("/api/v1/videos/1/download")
+                .header("x-cliente-id", "cliente1");
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=frames-video.mp4.zip"))
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/zip"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando vídeo ou frames.zip não encontrado")
+    void deveRetornarNotFoundQuandoVideoOuArquivoNaoEncontrado() throws Exception {
+        when(videoDownloadUseCase.prepareDownload(anyLong(), anyString())).thenThrow(new IllegalArgumentException("Não encontrado"));
+
+        mockMvc.perform(get("/api/v1/videos/1/download").header("x-cliente-id", "cliente1"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 500 quando ocorrer erro inesperado no download")
+    void deveRetornarInternalServerErrorQuandoErroInesperado() throws Exception {
+        when(videoDownloadUseCase.prepareDownload(anyLong(), anyString())).thenThrow(new RuntimeException("Erro inesperado"));
+
+        mockMvc.perform(get("/api/v1/videos/1/download").header("x-cliente-id", "cliente1"))
+                .andExpect(status().isInternalServerError());
     }
 }

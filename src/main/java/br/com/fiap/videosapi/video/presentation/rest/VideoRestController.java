@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -81,10 +82,12 @@ public interface VideoRestController {
             description = "Download the original uploaded video along with all extracted frames stored under {videoId}/frames as a single ZIP archive"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "ZIP generated successfully"),
+            @ApiResponse(responseCode = "200", description = "Get ZIP successfully"),
             @ApiResponse(responseCode = "404", description = "Video or associated blobs not found"),
             @ApiResponse(responseCode = "500", description = "Error generating ZIP archive")
     })
-    ResponseEntity<StreamingResponseBody> downloadVideoAndFrames(
-            @Parameter(description = "Video ID", required = true) @PathVariable Long id);
+    ResponseEntity<StreamingResponseBody> downloadCompactedVideoFrames(
+            @Parameter(description = "Video ID", required = true) @PathVariable Long id,
+            HttpServletRequest request
+    );
 }

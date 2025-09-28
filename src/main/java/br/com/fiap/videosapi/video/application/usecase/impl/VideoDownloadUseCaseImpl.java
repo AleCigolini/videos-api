@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,25 +18,19 @@ public class VideoDownloadUseCaseImpl implements VideoDownloadUseCase {
     private final AzureBlobStorageService azureBlobStorageService;
 
     @Override
-    public VideoDownloadData prepareDownload(Long videoId) {
+    public VideoDownloadData prepareDownload(Long videoId, String idCliente) {
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() -> new IllegalArgumentException("Video not found with id: " + videoId));
 
-        String videoBlobName = video.getStoredFileName();
-        if (!azureBlobStorageService.blobExists(videoBlobName)) {
-            throw new IllegalStateException("Video blob not found in storage: " + videoBlobName);
+        String framesZipBlobName = idCliente + "/" + videoId + "/frames/frames.zip";
+        if (!azureBlobStorageService.blobExists(framesZipBlobName)) {
+            throw new IllegalArgumentException("Arquivo frames.zip não encontrado para o vídeo: " + videoId);
         }
-
-        String framePrefix = videoId + "/frames/";
-        List<String> frameBlobs = azureBlobStorageService.listBlobsByPrefix(framePrefix);
-        log.info("Found {} frame(s) for video {}", frameBlobs.size(), videoId);
 
         return VideoDownloadData.builder()
                 .video(video)
-                .videoBlobName(videoBlobName)
-                .frameBlobNames(frameBlobs)
-                .zipFileName("video-" + videoId + ".zip")
+                .videoBlobName(framesZipBlobName)
+                .zipFileName("frames-" + video.getOriginalFileName() + ".zip")
                 .build();
     }
 }
-

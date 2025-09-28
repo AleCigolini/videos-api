@@ -1,14 +1,15 @@
 package br.com.fiap.videosapi.video.presentation.rest.impl;
 
+import br.com.fiap.videosapi.video.application.usecase.VideoDownloadUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoListUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
-import br.com.fiap.videosapi.video.application.usecase.VideoDownloadUseCase;
 import br.com.fiap.videosapi.video.application.usecase.dto.VideoDownloadData;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoListResponse;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
 import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
 import br.com.fiap.videosapi.video.infrastructure.azure.AzureBlobStorageService;
 import br.com.fiap.videosapi.video.presentation.rest.VideoRestController;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -21,8 +22,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/api/v1/videos")
@@ -101,22 +100,24 @@ public class VideoRestControllerImpl implements VideoRestController {
 
     @Override
     @GetMapping(value = "/{id}/download", produces = "application/zip")
-    public ResponseEntity<StreamingResponseBody> downloadVideoAndFrames(@PathVariable Long id) {
-        log.info("Received request to download video {} and its frames as ZIP", id);
+    public ResponseEntity<StreamingResponseBody> downloadCompactedVideoFrames(
+            @PathVariable Long id,
+            HttpServletRequest request
+    ) {
+        log.info("Received request to download frames.zip for video {}", id);
         try {
-            VideoDownloadData data = videoDownloadUseCase.prepareDownload(id);
+            String idCliente = request.getHeader("x-cliente-id");
+            VideoDownloadData data = videoDownloadUseCase.prepareDownload(id, idCliente);
 
             StreamingResponseBody responseBody = outputStream -> {
-                try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
-                    addBlobToZip(zipOut, data.getVideoBlobName(), data.getVideo().getOriginalFileName());
-
-                    for (String frameBlob : data.getFrameBlobNames()) {
-                        String entryName = deriveFrameEntryName(id, frameBlob);
-                        addBlobToZip(zipOut, frameBlob, entryName);
+                try (InputStream in = azureBlobStorageService.openBlobInputStream(data.getVideoBlobName())) {
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = in.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, len);
                     }
-                    zipOut.finish();
                 } catch (Exception ex) {
-                    log.error("Error while streaming ZIP for video {}: {}", id, ex.getMessage(), ex);
+                    log.error("Error while streaming frames.zip for video {}: {}", id, ex.getMessage(), ex);
                 }
             };
 
@@ -135,27 +136,5 @@ public class VideoRestControllerImpl implements VideoRestController {
             log.error("Unexpected error generating ZIP for video {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    private void addBlobToZip(ZipOutputStream zipOut, String blobName, String entryName) throws Exception {
-        try (InputStream in = azureBlobStorageService.openBlobInputStream(blobName)) {
-            ZipEntry zipEntry = new ZipEntry(entryName);
-            zipOut.putNextEntry(zipEntry);
-            byte[] buffer = new byte[8192];
-            int len;
-            while ((len = in.read(buffer)) != -1) {
-                zipOut.write(buffer, 0, len);
-            }
-            zipOut.closeEntry();
-            log.debug("Added blob {} as {} to ZIP", blobName, entryName);
-        }
-    }
-
-    private String deriveFrameEntryName(Long videoId, String fullBlobName) {
-        String expectedPrefix = videoId + "/frames/";
-        if (fullBlobName.startsWith(expectedPrefix)) {
-            return "frames/" + fullBlobName.substring(expectedPrefix.length());
-        }
-        return "frames/" + fullBlobName;
     }
 }
