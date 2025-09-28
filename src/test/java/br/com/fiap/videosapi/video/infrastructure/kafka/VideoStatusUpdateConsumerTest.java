@@ -14,7 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.support.Acknowledgment;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -57,11 +58,10 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         verify(objectMapper).readValue(message, VideoStatusUpdateEvent.class);
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(videoStatusUpdateEvent);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -79,10 +79,9 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(eventProcessing);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(eventProcessing);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -100,10 +99,9 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(eventError);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(eventError);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -116,7 +114,7 @@ class VideoStatusUpdateConsumerTest {
                 .thenThrow(jsonException);
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment));
+                videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset));
 
         assertEquals("Failed to process video status update", exception.getMessage());
         assertEquals(jsonException, exception.getCause());
@@ -138,7 +136,7 @@ class VideoStatusUpdateConsumerTest {
                 .processStatusUpdateEvent(videoStatusUpdateEvent);
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment));
+                videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset));
 
         assertEquals("Failed to process video status update", exception.getMessage());
         assertEquals(useCaseException, exception.getCause());
@@ -157,10 +155,9 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, customTopic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, customTopic, partition, offset);
 
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(videoStatusUpdateEvent);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -172,10 +169,9 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, customPartition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, customPartition, offset);
 
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(videoStatusUpdateEvent);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -187,10 +183,9 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, customOffset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, customOffset);
 
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(videoStatusUpdateEvent);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -207,10 +202,9 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(eventIdGrande);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         verify(videoStatusUpdateUseCase).processStatusUpdateEvent(eventIdGrande);
-        verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -221,11 +215,10 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         var inOrder = inOrder(videoStatusUpdateUseCase, acknowledgment);
         inOrder.verify(videoStatusUpdateUseCase).processStatusUpdateEvent(videoStatusUpdateEvent);
-        inOrder.verify(acknowledgment).acknowledge();
     }
 
     @Test
@@ -236,7 +229,7 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         verify(objectMapper, times(1)).readValue(message, VideoStatusUpdateEvent.class);
     }
@@ -249,7 +242,7 @@ class VideoStatusUpdateConsumerTest {
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
                 .thenReturn(videoStatusUpdateEvent);
 
-        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
+        videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset);
 
         verify(videoStatusUpdateUseCase, times(1)).processStatusUpdateEvent(videoStatusUpdateEvent);
     }
@@ -264,7 +257,7 @@ class VideoStatusUpdateConsumerTest {
                 .thenThrow(originalException);
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment));
+                videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset));
 
         assertEquals("Failed to process video status update", exception.getMessage());
         assertEquals(originalException, exception.getCause());

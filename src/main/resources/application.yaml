@@ -28,7 +28,7 @@ spring:
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:video-api-consumer-group}
       auto-offset-reset: earliest
-      enable-auto-commit: false
+      enable-auto-commit: true
     producer:
       acks: all
       retries: 3
