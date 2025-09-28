@@ -49,6 +49,13 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: POSTGRES_PASSWORD
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-dev-namespace.servicebus.windows.net:9093
+            - name: KAFKA_SASL_JAAS_CONFIG
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: KAFKA_SASL_JAAS_CONFIG
             - name: AZURE_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
@@ -58,10 +65,6 @@ spec:
               value: video.uploaded
             - name: KAFKA_TOPIC_VIDEO_STATUS_UPDATE
               value: video.status
-            - name: SPRING_REDIS_HOST
-              value: redis
-            - name: SPRING_REDIS_PORT
-              value: "6379"
           resources:
             requests:
               cpu: "400m"

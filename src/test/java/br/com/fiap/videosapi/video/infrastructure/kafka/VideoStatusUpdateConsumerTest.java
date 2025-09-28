@@ -223,7 +223,6 @@ class VideoStatusUpdateConsumerTest {
 
         videoStatusUpdateConsumer.consumeVideoStatusUpdate(message, topic, partition, offset, acknowledgment);
 
-        // Verifica a ordem: primeiro processa, depois faz acknowledge
         var inOrder = inOrder(videoStatusUpdateUseCase, acknowledgment);
         inOrder.verify(videoStatusUpdateUseCase).processStatusUpdateEvent(videoStatusUpdateEvent);
         inOrder.verify(acknowledgment).acknowledge();

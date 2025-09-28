@@ -15,27 +15,25 @@ import java.time.LocalDateTime;
 public class VideoStatusUpdateEvent {
 
     private Long videoId;
+    private String userId;
     private VideoStatus previousStatus;
     private VideoStatus newStatus;
     private String message;
     private LocalDateTime timestamp;
     private String processedBy;
-    private String userId;
 
     public static VideoStatusUpdateEvent createStatusUpdateEvent(
             Long videoId,
             VideoStatus previousStatus,
             VideoStatus newStatus,
             String message,
-            String processedBy,
-            String userId) {
+            String processedBy) {
         return VideoStatusUpdateEvent.builder()
                 .videoId(videoId)
                 .previousStatus(previousStatus)
                 .newStatus(newStatus)
                 .message(message)
                 .processedBy(processedBy)
-                .userId(userId)
                 .timestamp(LocalDateTime.now())
                 .build();
     }

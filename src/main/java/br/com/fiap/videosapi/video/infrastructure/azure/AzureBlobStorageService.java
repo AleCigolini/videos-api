@@ -3,7 +3,6 @@ package br.com.fiap.videosapi.video.infrastructure.azure;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -20,25 +18,25 @@ public class AzureBlobStorageService {
     private final BlobServiceClient blobServiceClient;
     private final String containerName;
 
-    public AzureBlobStorageService(@Value("${azure.storage.connection-string}") String connectionString,
-                                   @Value("${azure.storage.container-name}") String containerName) {
-        this.blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
+    public AzureBlobStorageService(
+            @Value("${azure.storage.container-name}") String containerName,
+            BlobServiceClient blobServiceClient) {
+        this.blobServiceClient = blobServiceClient;
         this.containerName = containerName;
-        createContainerIfNotExists();
     }
 
-    public AzureBlobUploadResult uploadVideo(MultipartFile file) {
+    public AzureBlobUploadResult uploadVideo(MultipartFile file, Long idVideo) {
+        createContainerIfNotExists();
         try {
-            String fileName = generateUniqueFileName(file.getOriginalFilename());
+            String originalFileName = file.getOriginalFilename();
+            String fileName = idVideo + "/" + originalFileName;
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
             BlobClient blobClient = containerClient.getBlobClient(fileName);
 
             try (InputStream inputStream = file.getInputStream()) {
                 blobClient.upload(inputStream, file.getSize(), true);
                 log.info("Successfully uploaded file {} to Azure Blob Storage", fileName);
-                
+
                 return AzureBlobUploadResult.builder()
                         .fileName(fileName)
                         .blobUrl(blobClient.getBlobUrl())
@@ -57,36 +55,29 @@ public class AzureBlobStorageService {
         }
     }
 
-    public boolean deleteVideo(String fileName) {
-        try {
-            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-            BlobClient blobClient = containerClient.getBlobClient(fileName);
-            blobClient.delete();
-            log.info("Successfully deleted file {} from Azure Blob Storage", fileName);
-            return true;
-        } catch (Exception e) {
-            log.error("Error deleting file {} from Azure Blob Storage", fileName, e);
-            return false;
+    public InputStream openBlobInputStream(String blobName) {
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+        if (!blobClient.exists()) {
+            throw new IllegalArgumentException("Blob not found: " + blobName);
         }
+        return blobClient.openInputStream();
+    }
+
+    public boolean blobExists(String blobName) {
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        return containerClient.getBlobClient(blobName).exists();
     }
 
     private void createContainerIfNotExists() {
         try {
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-            if (!containerClient.exists()) {
+            if (containerClient != null && !containerClient.exists()) {
                 containerClient.create();
                 log.info("Created container: {}", containerName);
             }
         } catch (Exception e) {
             log.error("Error creating container: {}", containerName, e);
         }
-    }
-
-    private String generateUniqueFileName(String originalFileName) {
-        String extension = "";
-        if (originalFileName != null && originalFileName.contains(".")) {
-            extension = originalFileName.substring(originalFileName.lastIndexOf("."));
-        }
-        return UUID.randomUUID() + extension;
     }
 }

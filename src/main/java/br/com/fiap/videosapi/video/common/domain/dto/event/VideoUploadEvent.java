@@ -26,6 +26,7 @@ public class VideoUploadEvent {
     private VideoStatus status;
     private LocalDateTime uploadedAt;
     private String eventType;
+    private String userId;
 
     public static VideoUploadEvent createUploadSuccessEvent(Long videoId, String originalFileName,
                                                             String storedFileName, String contentType,

@@ -21,6 +21,9 @@ public class Video {
     private Long id;
 
     @Column(nullable = false)
+    private String idCliente;
+
+    @Column(nullable = false)
     private String originalFileName;
 
     @Column(nullable = false)
