@@ -20,7 +20,7 @@ public class VideoEventProducer implements VideoEventPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${kafka.topics.video-upload}")
+    @Value("${topics.video-upload}")
     private String videoUploadTopic;
 
     public void publishVideoUploadEvent(VideoUploadEvent event) {
