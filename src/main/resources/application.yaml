@@ -36,8 +36,6 @@ spring:
       auto-offset-reset: earliest
       enable-auto-commit: false
     producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.JsonSerializer
       acks: all
       retries: 3
       properties:
