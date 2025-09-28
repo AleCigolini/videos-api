@@ -49,7 +49,7 @@ class VideoEventProducerTest {
 
         videoUploadEvent = VideoUploadEvent.builder()
                 .videoId(1L)
-                .originalFileName("test-video.mp4")
+                .fileName("test-video.mp4")
                 .fileSize(1024L)
                 .contentType("video/mp4")
                 .build();
@@ -79,7 +79,7 @@ class VideoEventProducerTest {
 
         VideoUploadEvent eventComIdEspecifico = VideoUploadEvent.builder()
                 .videoId(123L)
-                .originalFileName("outro-video.mp4")
+                .fileName("outro-video.mp4")
                 .build();
 
         when(objectMapper.writeValueAsString(eventComIdEspecifico)).thenReturn(eventJson);
@@ -146,8 +146,8 @@ class VideoEventProducerTest {
     @Test
     @DisplayName("Deve publicar múltiplos eventos independentemente")
     void devePublicarMultiplosEventosIndependentemente() throws JsonProcessingException {
-        VideoUploadEvent evento1 = VideoUploadEvent.builder().videoId(1L).originalFileName("video1.mp4").build();
-        VideoUploadEvent evento2 = VideoUploadEvent.builder().videoId(2L).originalFileName("video2.mp4").build();
+        VideoUploadEvent evento1 = VideoUploadEvent.builder().videoId(1L).fileName("video1.mp4").build();
+        VideoUploadEvent evento2 = VideoUploadEvent.builder().videoId(2L).fileName("video2.mp4").build();
 
         String json1 = "{\"videoId\":1}";
         String json2 = "{\"videoId\":2}";
@@ -185,7 +185,7 @@ class VideoEventProducerTest {
     void deveConverterVideoIdParaStringCorretamente() throws JsonProcessingException {
         VideoUploadEvent eventoComIdGrande = VideoUploadEvent.builder()
                 .videoId(999999999L)
-                .originalFileName("video-grande-id.mp4")
+                .fileName("video-grande-id.mp4")
                 .build();
 
         String eventJson = "{\"videoId\":999999999}";

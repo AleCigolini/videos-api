@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class VideoUploadEvent {
 
     private Long videoId;
-    private String originalFileName;
+    private String fileName;
     private String storedFileName;
     private String contentType;
     private Long fileSize;
@@ -27,14 +27,14 @@ public class VideoUploadEvent {
     private LocalDateTime uploadedAt;
     private String eventType;
 
-    public static VideoUploadEvent createUploadSuccessEvent(Long videoId, String originalFileName,
+    public static VideoUploadEvent createUploadSuccessEvent(Long videoId, String fileName,
                                                             String storedFileName, String contentType,
                                                             Long fileSize, String azureBlobUrl,
                                                             String containerName, String connectionString,
                                                             LocalDateTime uploadedAt) {
         return VideoUploadEvent.builder()
                 .videoId(videoId)
-                .originalFileName(originalFileName)
+                .fileName(fileName)
                 .storedFileName(storedFileName)
                 .contentType(contentType)
                 .fileSize(fileSize)
