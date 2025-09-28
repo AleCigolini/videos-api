@@ -7,20 +7,21 @@
 ### Exemplos com curl
 
 ```bash
-# Upload
-curl -X POST http://localhost:8080/api/v1/videos/upload \
+# Upload (múltiplos arquivos suportados)
+curl -X POST http://localhost:8080/videos/api/v1/videos/upload \
   -H "x-cliente-id: user-123" \
-  -F "files=@/path/to/video.mp4" \
+  -F "files=@/path/to/video1.mp4" \
+  -F "files=@/path/to/video2.mp4" \
   -H "Content-Type: multipart/form-data"
 
 # Listar todos
-curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos
+curl -H "x-cliente-id: user-123" http://localhost:8080/videos/api/v1/videos
 
 # Listar por status
-curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos/status/UPLOADED
+curl -H "x-cliente-id: user-123" http://localhost:8080/videos/api/v1/videos/status/UPLOADED
 
 # Buscar por ID
-curl -H "x-cliente-id: user-123" http://localhost:8080/api/v1/videos/1
+curl -H "x-cliente-id: user-123" http://localhost:8080/videos/api/v1/videos/1
 ```
 # API de Vídeos
 
@@ -31,15 +32,12 @@ Uma aplicação Spring Boot robusta para upload e gerenciamento de vídeos com i
 - **Upload de Vídeos**: Endpoint REST API para upload de arquivos de vídeo (até 500MB)
 - **Listagem de Vídeos**: Endpoints para listar vídeos processados com filtros por status
 - **Consulta Individual**: Endpoint para consultar informações específicas de um vídeo
-- **Armazenamento Azure**: Armazenamento seguro de vídeos usando Azure Blob Storage
+- **Armazenamento Azure**: Armazenamento de vídeos usando Azure Blob Storage (Azurite em desenvolvimento)
 - **Streaming de Eventos**: Integração Kafka para notificações de upload e atualizações de status
 - **Consumer de Status**: Consumidor Kafka para processar atualizações de status de processamento
-- **Cache Redis**: Cache distribuído para melhor performance com TTL configurável
 - **Desenvolvimento Docker**: Ambiente de desenvolvimento completamente containerizado
-- **Serviços Mock**: Desenvolvimento local com mocks do Azure Storage e Kafka
 - **Validação de Arquivos**: Detecção de tipo MIME e validação de tamanho
 - **Arquitetura Limpa**: Design orientado a domínio com clara separação de responsabilidades
-- **Testes Abrangentes**: Testes unitários e de integração com Testcontainers
 - **Documentação da API**: Documentação OpenAPI/Swagger
 
 ## Formatos de Vídeo Suportados
@@ -51,7 +49,6 @@ Uma aplicação Spring Boot robusta para upload e gerenciamento de vídeos com i
 - **Java 21**
 - **Spring Boot 3.3.5**
 - **Spring Kafka** para streaming de eventos
-- **Redis** para cache distribuído
 - **Azure Blob Storage SDK** com mock Azurite
 - **PostgreSQL** com migrações Flyway
 - **Docker & Docker Compose** para ambiente de desenvolvimento
@@ -67,14 +64,14 @@ A aplicação segue os princípios da Arquitetura Limpa com ambiente de desenvol
 ```
 src/main/java/br/com/fiap/videosapi/
 ├── core/
-│   ├── config/             # Configurações Redis, Kafka e desenvolvimento
+│   ├── config/             # Configurações (Kafka, ObjectMapper)
 │   └── exception/          # Tratamento global de exceções
 ├── video/
     ├── application/         # Casos de uso e lógica de negócio
     ├── domain/             # Entidades e objetos de domínio
     ├── infrastructure/     # Integrações externas
-    │   ├── azure/          # Azure Blob Storage (real + mock)
-    │   ├── kafka/          # Produtores Kafka (real + mock)
+    │   ├── azure/          # Azure Blob Storage (Azurite no dev)
+    │   ├── kafka/          # Produtor/Consumer Kafka
     │   └── repository/     # Persistência de dados
     └── common/             # DTOs e eventos compartilhados
 ```
@@ -106,8 +103,8 @@ src/main/java/br/com/fiap/videosapi/
    ```
 
 3. **Acessar Serviços**
-   - API: http://localhost:8080
-   - Swagger UI: http://localhost:8080/swagger-ui.html
+   - API: http://localhost:8080/videos
+   - Swagger UI: http://localhost:8080/videos/swagger-ui/index.html
    - Kafka UI: http://localhost:8081
    - PostgreSQL: localhost:5432
    - Redis: localhost:6379
@@ -127,45 +124,33 @@ src/main/java/br/com/fiap/videosapi/
 O ambiente de desenvolvimento inclui:
 
 - **PostgreSQL 16**: Banco de dados principal com health checks
-- **Redis 7**: Cache distribuído com persistência
 - **Kafka + Zookeeper**: Plataforma de streaming de eventos
 - **Azurite**: Emulador do Azure Blob Storage
 - **Kafka UI**: Interface web para monitoramento do Kafka
 
 ## 🔧 Perfis de Configuração
 
-- **`local`**: Desenvolvimento com mocks habilitados (recomendado)
+- **`local`**: Desenvolvimento com serviços Docker locais (Kafka, PostgreSQL, Azurite)
 - **`dev`**: Desenvolvimento com serviços externos reais
 - **`prod`**: Configuração de produção
-
-## 📊 Serviços Mock
-
-Para desenvolvimento local, a aplicação usa mocks inteligentes:
-
-- **Mock Azure Storage**: Arquivos armazenados localmente em `/tmp/mock-azure-storage/`
-- **Mock Kafka**: Eventos armazenados no Redis com TTL de 1 hora
-- **Cache Redis**: TTL de 10 minutos para dados da aplicação
 
 ## 🔄 Fluxo de Processamento de Vídeos
 
 ### 1. Upload do Vídeo
 1. Recebe arquivo de vídeo via endpoint REST
 2. Valida tipo MIME e tamanho do arquivo
-3. Faz upload para Azure Blob Storage (ou mock local)
+3. Faz upload para Azure Blob Storage (Azurite no dev)
 4. Salva metadados no PostgreSQL
-5. Armazena informações no Redis para consulta rápida
-6. Publica evento no tópico Kafka `video-upload-events`
+5. Publica evento no tópico Kafka `video-upload-events`
 
 ### 2. Processamento de Status
 1. Consumer escuta o tópico `video-status-update-events`
 2. Atualiza status no banco PostgreSQL
-3. Atualiza cache Redis
-4. Registra timestamp de processamento quando aplicável
+3. Registra timestamp de processamento quando aplicável
 
 ### 3. Consulta de Vídeos
-1. Verifica cache Redis primeiro
-2. Consulta banco PostgreSQL se necessário
-3. Retorna informações com link de download (se processado)
+1. Consulta banco PostgreSQL
+2. Retorna informações com link de download (quando aplicável)
 
 ## 🧪 Testes
 
@@ -180,19 +165,19 @@ mvn test -Dspring.profiles.active=test
 ## 📚 Documentação
 
 - **Guia de Desenvolvimento**: Veja [DEVELOPMENT.md](DEVELOPMENT.md) para instruções detalhadas de configuração
-- **Documentação da API**: Disponível em `/swagger-ui.html` quando a aplicação estiver rodando
-- **Health Checks**: Disponível em `/actuator/health`
+- **Documentação da API**: Disponível em `/videos/swagger-ui/index.html` quando a aplicação estiver rodando
+- **Health Checks**: Disponível em `/videos/actuator/health`
 
 ## 🎯 Endpoints da API
 
 ### Upload de Vídeo
 ```http
-POST /api/v1/videos/upload
+POST /videos/api/v1/videos/upload
 Content-Type: multipart/form-data
 x-cliente-id: <seu_user_id>
 
 Parâmetros:
-- file: Arquivo de vídeo (máx 500MB)
+- files: Lista de arquivos de vídeo (máx 500MB cada)
 
 Resposta:
 - 201: Upload realizado com sucesso
@@ -202,7 +187,7 @@ Resposta:
 
 ### Listar Todos os Vídeos
 ```http
-GET /api/v1/videos
+GET /videos/api/v1/videos
 x-cliente-id: <seu_user_id>
 
 Resposta:
@@ -211,7 +196,7 @@ Resposta:
 
 ### Listar Vídeos por Status
 ```http
-GET /api/v1/videos/status/{status}
+GET /videos/api/v1/videos/status/{status}
 x-cliente-id: <seu_user_id>
 
 Parâmetros:
@@ -223,7 +208,7 @@ Resposta:
 
 ### Consultar Vídeo por ID
 ```http
-GET /api/v1/videos/{id}
+GET /videos/api/v1/videos/{id}
 x-cliente-id: <seu_user_id>
 
 Parâmetros:
@@ -234,9 +219,23 @@ Resposta:
 - 404: Vídeo não encontrado
 ```
 
+### Download do Vídeo e Frames (ZIP)
+```http
+GET /videos/api/v1/videos/{id}/download
+x-cliente-id: <seu_user_id>
+
+Parâmetros:
+- id: ID do vídeo
+
+Resposta:
+- 200: Arquivo ZIP streamado com o conteúdo
+- 404: Vídeo ou blobs associados não encontrados
+- 500: Erro ao gerar o ZIP
+```
+
 ### Health Check
 ```http
-GET /actuator/health
+GET /videos/actuator/health
 ```
 
 ## 🤝 Contribuindo
