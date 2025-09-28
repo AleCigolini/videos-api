@@ -92,10 +92,11 @@ class VideoEventProducerTest {
 
     @Test
     @DisplayName("Deve capturar callback de sucesso corretamente")
+    @SuppressWarnings("unchecked")
     void deveCapturaCallbackDeSucessoCorretamente() throws JsonProcessingException {
         String eventJson = "{\"videoId\":1}";
         ArgumentCaptor<BiConsumer<SendResult<String, String>, Throwable>> callbackCaptor =
-                ArgumentCaptor.forClass(BiConsumer.class);
+                (ArgumentCaptor) ArgumentCaptor.forClass(BiConsumer.class);
 
         when(objectMapper.writeValueAsString(any())).thenReturn(eventJson);
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(future);
@@ -110,10 +111,11 @@ class VideoEventProducerTest {
 
     @Test
     @DisplayName("Deve executar callback de erro quando exceção for lançada")
+    @SuppressWarnings("unchecked")
     void deveExecutarCallbackDeErroQuandoExcecaoForLancada() throws JsonProcessingException {
         String eventJson = "{\"videoId\":1}";
         ArgumentCaptor<BiConsumer<SendResult<String, String>, Throwable>> callbackCaptor =
-                ArgumentCaptor.forClass(BiConsumer.class);
+                (ArgumentCaptor) ArgumentCaptor.forClass(BiConsumer.class);
 
         when(objectMapper.writeValueAsString(any())).thenReturn(eventJson);
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(future);

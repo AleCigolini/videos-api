@@ -5,7 +5,6 @@ import br.com.fiap.videosapi.video.application.usecase.VideoListUseCase;
 import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
 import br.com.fiap.videosapi.video.application.usecase.dto.VideoDownloadData;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoListResponse;
-import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
 import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
 import br.com.fiap.videosapi.video.infrastructure.azure.AzureBlobStorageService;
 import org.junit.jupiter.api.DisplayName;
@@ -15,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -54,10 +52,11 @@ class VideoRestControllerImplTest {
     void deveRetornarBadRequestQuandoNenhumArquivoForFornecido() throws Exception {
         mockMvc.perform(multipart("/api/v1/videos/upload")
                         .file("files", new byte[0])
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isBadRequest());
 
-        verify(videoUploadUseCase, never()).uploadVideos(anyList(), anyString());
+        verify(videoUploadUseCase, never()).uploadVideos(anyList());
     }
 
     @Test
@@ -71,7 +70,8 @@ class VideoRestControllerImplTest {
         when(videoListUseCase.listAllVideos()).thenReturn(videos);
 
         mockMvc.perform(get("/api/v1/videos")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[1].id").value(2));
@@ -85,7 +85,8 @@ class VideoRestControllerImplTest {
         when(videoListUseCase.listAllVideos()).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/v1/videos")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
@@ -104,7 +105,8 @@ class VideoRestControllerImplTest {
         when(videoListUseCase.listVideosByStatus(VideoStatus.PROCESSED)).thenReturn(videos);
 
         mockMvc.perform(get("/api/v1/videos/status/PROCESSED")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[1].id").value(2))
@@ -125,7 +127,8 @@ class VideoRestControllerImplTest {
         when(videoListUseCase.getVideoById(1L)).thenReturn(video);
 
         mockMvc.perform(get("/api/v1/videos/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.originalFileName").value("video1.mp4"));
@@ -139,7 +142,8 @@ class VideoRestControllerImplTest {
         when(videoListUseCase.getVideoById(999L)).thenThrow(new RuntimeException("Vídeo não encontrado"));
 
         mockMvc.perform(get("/api/v1/videos/999")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isNotFound());
 
         verify(videoListUseCase, times(1)).getVideoById(999L);
