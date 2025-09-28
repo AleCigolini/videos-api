@@ -22,16 +22,7 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 1
-  data:
-    redis:
-      host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
-      connect-timeout: 2000ms
-      jedis:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
+        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG}
 
 azure:
   storage:
@@ -40,5 +31,5 @@ azure:
 
 kafka:
   topics:
-    video-upload: ${KAFKA_TOPIC_VIDEO_UPLOAD:video-upload-events}
-    video-status-update: ${KAFKA_TOPIC_VIDEO_STATUS_UPDATE:video-status-update-events}
+    video-upload: ${KAFKA_TOPIC_VIDEO_UPLOAD:video.uploaded}
+    video-status-update: ${KAFKA_TOPIC_VIDEO_STATUS_UPDATE:video.status}
