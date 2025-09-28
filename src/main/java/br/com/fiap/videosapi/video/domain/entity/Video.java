@@ -21,7 +21,7 @@ public class Video {
     private Long id;
 
     @Column(nullable = false)
-    private String idCliente;
+    private String userId;
 
     @Column(nullable = false)
     private String originalFileName;
@@ -40,9 +40,6 @@ public class Video {
 
     @Column(nullable = false)
     private String containerName;
-
-    @Column(nullable = false)
-    private String userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

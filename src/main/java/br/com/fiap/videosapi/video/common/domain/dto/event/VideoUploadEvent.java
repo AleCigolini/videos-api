@@ -26,13 +26,12 @@ public class VideoUploadEvent {
     private VideoStatus status;
     private LocalDateTime uploadedAt;
     private String eventType;
-    private String userId;
 
     public static VideoUploadEvent createUploadSuccessEvent(Long videoId, String originalFileName,
                                                             String storedFileName, String contentType,
                                                             Long fileSize, String azureBlobUrl,
                                                             String containerName, String connectionString,
-                                                            LocalDateTime uploadedAt, String userId) {
+                                                            LocalDateTime uploadedAt) {
         return VideoUploadEvent.builder()
                 .videoId(videoId)
                 .originalFileName(originalFileName)
@@ -42,7 +41,6 @@ public class VideoUploadEvent {
                 .azureBlobUrl(azureBlobUrl)
                 .containerName(containerName)
                 .connectionString(connectionString)
-                .userId(userId)
                 .status(VideoStatus.UPLOADED)
                 .uploadedAt(uploadedAt)
                 .eventType("VIDEO_UPLOAD_SUCCESS")

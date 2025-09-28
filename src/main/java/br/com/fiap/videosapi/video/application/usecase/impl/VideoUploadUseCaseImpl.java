@@ -1,5 +1,6 @@
 package br.com.fiap.videosapi.video.application.usecase.impl;
 
+import br.com.fiap.videosapi.core.context.UserContext;
 import br.com.fiap.videosapi.video.application.usecase.VideoUploadUseCase;
 import br.com.fiap.videosapi.video.common.domain.dto.event.VideoUploadEvent;
 import br.com.fiap.videosapi.video.common.domain.dto.response.VideoUploadResponse;
@@ -42,24 +43,26 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
 
     @Override
     @Transactional
-    public List<VideoUploadResponse> uploadVideos(List<MultipartFile> files, String userId) {
+    public List<VideoUploadResponse> uploadVideos(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("No files provided for upload");
         }
 
         return files.stream()
-                .map(file -> uploadVideo(file, userId))
+                .map(this::uploadVideo)
                 .toList();
     }
 
     @Transactional
-    public VideoUploadResponse uploadVideo(MultipartFile file, String userId) {
+    public VideoUploadResponse uploadVideo(MultipartFile file) {
         try {
             validateVideoFile(file);
+            String userId = UserContext.getUserId();
 
             Video video = Video.builder()
-                    .idCliente(userId)
+                    .userId(userId)
                     .originalFileName(file.getOriginalFilename())
+                    .storedFileName(file.getName())
                     .contentType(file.getContentType())
                     .fileSize(file.getSize())
                     .status(VideoStatus.UPLOADED)
@@ -77,9 +80,10 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
             video.setContainerName(uploadResult.getContainerName());
             video.setFileSize(file.getSize());
             video.setContentType(file.getContentType());
+            video.setAzureBlobUrl(uploadResult.getBlobUrl());
             video = videoRepository.save(video);
 
-            VideoUploadEvent event = createVideoUploadEvent(video, uploadResult, userId);
+            VideoUploadEvent event = createVideoUploadEvent(video, uploadResult);
             videoEventProducer.publishVideoUploadEvent(event);
 
             return buildSuccessResponse(video);
@@ -92,10 +96,10 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
         }
     }
 
-    private VideoUploadEvent createVideoUploadEvent(Video video, AzureBlobUploadResult uploadResult, String userId) {
+    private VideoUploadEvent createVideoUploadEvent(Video video, AzureBlobUploadResult uploadResult) {
         return VideoUploadEvent.builder()
                 .videoId(video.getId())
-                .userId(userId)
+                .userId(video.getUserId())
                 .azureBlobUrl(uploadResult.getBlobUrl())
                 .originalFileName(video.getOriginalFileName())
                 .storedFileName(video.getStoredFileName())

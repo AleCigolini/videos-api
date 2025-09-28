@@ -42,15 +42,13 @@ public class VideoRestControllerImpl implements VideoRestController {
     ) {
         log.info("Received request to upload {} video(s)", files.size());
 
-        String userId = request.getHeader("x-cliente-id");
-
         if (files.isEmpty() || files.stream().allMatch(MultipartFile::isEmpty)) {
             log.warn("No files provided in the upload request");
             return ResponseEntity.badRequest().body("No files provided for upload");
         }
 
         try {
-            List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files, userId);
+            List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files);
 
             boolean allSuccessful = responses.stream()
                     .allMatch(response -> response.getId() != null);
