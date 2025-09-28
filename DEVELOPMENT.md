@@ -4,9 +4,17 @@
 - O interceptor `UserContextInterceptor` rejeita requisições sem esse header (exceto `/actuator`, `/swagger`, `/v3/api-docs`).
 - O header é espelhado nas respostas.
 
+### Context Path e URLs
+
+- A aplicação expõe os endpoints sob o context-path `/videos` (ver `application.yaml`).
+- Exemplos de URLs:
+  - API base: `http://localhost:8080/videos`
+  - Swagger UI: `http://localhost:8080/videos/swagger-ui/index.html`
+  - Health: `http://localhost:8080/videos/actuator/health`
+
 # Videos API - Development Environment
 
-Este documento descreve como configurar e usar o ambiente de desenvolvimento local com Docker, Redis para cache e mocks para as integrações externas.
+Este documento descreve como configurar e usar o ambiente de desenvolvimento local com Docker (PostgreSQL, Kafka, Azurite). O Redis está disponível via Docker, mas não é utilizado pela aplicação no estado atual.
 
 ## 🏗️ Arquitetura de Desenvolvimento
 
@@ -78,7 +86,7 @@ mvn clean compile -Dmaven.compiler.annotationProcessorPaths=org.projectlombok:lo
 
 ### Profiles de Aplicação
 
-- **`local`**: Desenvolvimento local com mocks habilitados
+- **`local`**: Desenvolvimento local com serviços Docker (Postgres, Kafka, Azurite). Se `kafka.mock.enabled=true`, o consumer Kafka é desabilitado (vide `VideoStatusUpdateConsumer` com `@ConditionalOnProperty`).
 - **`dev`**: Desenvolvimento com serviços reais
 - **`prod`**: Produção
 
@@ -110,29 +118,36 @@ AZURE_STORAGE_CONTAINER_NAME=videos
 ### 1. Upload de Vídeo
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/videos/upload \
+curl -X POST http://localhost:8080/videos/api/v1/videos/upload \
   -H "x-cliente-id: user-123" \
-  -F "file=@/path/to/video.mp4" \
+  -F "files=@/path/to/video1.mp4" \
+  -F "files=@/path/to/video2.mp4" \
   -H "Content-Type: multipart/form-data"
 ```
 
 ### 2. Listar Todos os Vídeos
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/videos -H "x-cliente-id: user-123"
+curl -X GET http://localhost:8080/videos/api/v1/videos -H "x-cliente-id: user-123"
 ```
 
 ### 3. Listar Vídeos por Status
 
 ```bash
 # Status disponíveis: UPLOADED, PROCESSING, PROCESSED, FAILED
-curl -X GET http://localhost:8080/api/v1/videos/status/UPLOADED -H "x-cliente-id: user-123"
+curl -X GET http://localhost:8080/videos/api/v1/videos/status/UPLOADED -H "x-cliente-id: user-123"
 ```
 
 ### 4. Consultar Vídeo Específico
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/videos/1 -H "x-cliente-id: user-123"
+curl -X GET http://localhost:8080/videos/api/v1/videos/1 -H "x-cliente-id: user-123"
+```
+
+### 5. Download do Vídeo e Frames (ZIP)
+
+```bash
+curl -X GET http://localhost:8080/videos/api/v1/videos/1/download -H "x-cliente-id: user-123" -OJ
 ```
 
 ### 5. Simular Atualização de Status via Kafka
@@ -162,10 +177,10 @@ docker exec -it videos_kafka kafka-console-producer \
 
 ### Acessar Serviços
 
-- **Aplicação**: http://localhost:8080
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **Aplicação**: http://localhost:8080/videos
+- **Swagger UI**: http://localhost:8080/videos/swagger-ui/index.html
 - **Kafka UI**: http://localhost:8081
-- **Health Check**: http://localhost:8080/actuator/health
+- **Health Check**: http://localhost:8080/videos/actuator/health
 
 ### Logs Importantes
 
@@ -203,23 +218,23 @@ GET video:status:1
 
 ```bash
 # 1. Fazer upload de um vídeo
-curl -X POST http://localhost:8080/api/v1/videos/upload \
-  -F "file=@test-video.mp4"
+curl -X POST http://localhost:8080/videos/api/v1/videos/upload \
+  -F "files=@test-video.mp4"
 
 # 2. Verificar se foi salvo
-curl -X GET http://localhost:8080/api/v1/videos
+curl -X GET http://localhost:8080/videos/api/v1/videos
 
 # 3. Simular mudança de status para PROCESSING
 # (via Kafka UI ou console producer)
 
 # 4. Verificar atualização
-curl -X GET http://localhost:8080/api/v1/videos/1
+curl -X GET http://localhost:8080/videos/api/v1/videos/1
 
 # 5. Simular conclusão do processamento
 # Enviar status PROCESSED via Kafka
 
 # 6. Verificar link de download disponível
-curl -X GET http://localhost:8080/api/v1/videos/1
+curl -X GET http://localhost:8080/videos/api/v1/videos/1
 ```
 
 ## 🛠️ Scripts de Gerenciamento
@@ -284,9 +299,9 @@ curl http://localhost:8080/actuator/health
 
 | Serviço | URL/Porta | Descrição |
 |---------|-----------|-----------|
-| API Principal | http://localhost:8080 | Aplicação Spring Boot |
-| Swagger UI | http://localhost:8080/swagger-ui.html | Documentação interativa da API |
-| Health Check | http://localhost:8080/actuator/health | Status da aplicação |
+| API Principal | http://localhost:8080/videos | Aplicação Spring Boot |
+| Swagger UI | http://localhost:8080/videos/swagger-ui/index.html | Documentação interativa da API |
+| Health Check | http://localhost:8080/videos/actuator/health | Status da aplicação |
 | PostgreSQL | localhost:5432 | Banco de dados principal |
 | Redis | localhost:6379 | Cache distribuído |
 | Kafka | localhost:9092 | Message broker |
@@ -299,15 +314,6 @@ curl http://localhost:8080/actuator/health
 |--------|-----------|-----|
 | `video-upload-events` | Eventos de upload de vídeo | Publicado após upload bem-sucedido |
 | `video-status-update-events` | Atualizações de status | Consumido para atualizar status no banco |
-
-## 📊 Estrutura do Cache Redis
-
-```
-video:{id}              # Objeto completo do vídeo (TTL: 10min)
-video:status:{id}       # Status do vídeo (TTL: 10min)
-videos:all              # Lista de todos os vídeos (TTL: 10min)
-videos:status_{status}  # Lista filtrada por status (TTL: 10min)
-```
 
 ## 🧪 Dados de Teste
 
@@ -330,6 +336,90 @@ videos:status_{status}  # Lista filtrada por status (TTL: 10min)
 - Tamanho máximo: 500MB
 - Validação via Apache Tika
 
+## 🔄 Fluxos (Mermaid)
+
+### Upload de Vídeo
+```mermaid
+sequenceDiagram
+    Client->>+API: POST /videos/api/v1/videos/upload
+    API->>+Validation: Validate file(s) (size, MIME)
+    API->>+Azure: Upload to Blob Storage (Azurite)
+    API->>+PostgreSQL: Save metadata
+    API->>+Kafka: Publish upload event
+    API->>-Client: Return upload response
+```
+
+### Processamento de Status
+```mermaid
+sequenceDiagram
+    External->>+Kafka: Publish status update
+    Consumer->>+Kafka: Consume status event
+    Consumer->>+PostgreSQL: Update video status
+    Consumer->>-Kafka: Acknowledge message
+```
+
+### Consulta de Vídeos
+```mermaid
+sequenceDiagram
+    Client->>+API: GET /videos/api/v1/videos
+    API->>+PostgreSQL: Query database
+    PostgreSQL->>API: Return data
+    API->>-Client: Return video list
+```
+
+## 📊 Banco de Dados
+
+### Tabela `videos`
+```sql
+CREATE TABLE videos (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    original_file_name VARCHAR(255) NOT NULL,
+    stored_file_name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    file_size BIGINT NOT NULL,
+    azure_blob_url TEXT NOT NULL,
+    container_name VARCHAR(100) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'UPLOADED',
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## 🔄 Tópicos Kafka e Payloads
+
+### `video-upload-events` (produzido)
+```json
+{
+  "videoId": 1,
+  "originalFileName": "video.mp4",
+  "storedFileName": "uuid-video.mp4",
+  "contentType": "video/mp4",
+  "fileSize": 1048576,
+  "azureBlobUrl": "https://...",
+  "containerName": "videos",
+  "userId": "user-123",
+  "status": "UPLOADED",
+  "uploadedAt": "2025-09-06T10:44:00",
+  "eventType": "VIDEO_UPLOAD_SUCCESS"
+}
+```
+
+### `video-status-update-events` (consumido)
+```json
+{
+  "videoId": 1,
+  "previousStatus": "UPLOADED",
+  "newStatus": "PROCESSING",
+  "message": "Video processing started",
+  "processedBy": "video-processor-service",
+  "userId": "user-123",
+  "timestamp": "2025-09-06T10:45:00"
+}
+```
+
 ## 🚀 Próximos Passos
 
 1. **Resolver Compilação Lombok**: Configure annotation processing na IDE
@@ -345,27 +435,13 @@ videos:status_{status}  # Lista filtrada por status (TTL: 10min)
 - Health checks garantem que serviços estejam prontos antes da aplicação iniciar
 - Migrations do Flyway são executadas automaticamente na inicialização
 
-## 🧪 Mocks e Simulações
+## 🧪 Azurite (Mock do Azure Blob Storage)
 
-### Azure Blob Storage Mock
-
-O Azurite simula o Azure Blob Storage localmente:
+O Azurite emula o Azure Blob Storage localmente. A aplicação usa o SDK oficial apontando para o endpoint do Azurite (ver `docker-compose.yml` e `application-local.yaml`).
 
 ```bash
-# Verificar containers
+# Verificar containers disponíveis
 curl http://localhost:10000/devstoreaccount1?comp=list
-
-# Arquivos são armazenados em: /tmp/mock-azure-storage/
-```
-
-### Kafka Mock (Redis)
-
-No perfil `local`, eventos Kafka são simulados via Redis:
-
-```bash
-# Verificar eventos no Redis
-docker exec -it videos_redis redis-cli
-KEYS *events*
 ```
 
 ## 🔧 Configuração da IDE
@@ -500,16 +576,6 @@ Acesse `http://localhost:8081` para:
 - Monitorar mensagens
 - Gerenciar consumers
 
-### Redis CLI
-
-```bash
-# Conectar ao Redis
-docker exec -it videos_redis redis-cli
-
-# Ver eventos mock do Kafka
-LRANGE mock:video-upload-events:list 0 -1
-```
-
 ## 🧪 Testes
 
 ### Testes de Integração
@@ -523,11 +589,11 @@ mvn test -Dspring.profiles.active=test
 
 ```bash
 # Health check
-curl http://localhost:8080/actuator/health
+curl http://localhost:8080/videos/actuator/health
 
 # Upload de vídeo (exemplo)
-curl -X POST http://localhost:8080/api/videos/upload \
-  -F "file=@test-video.mp4" \
+curl -X POST http://localhost:8080/videos/api/v1/videos/upload \
+  -F "files=@test-video.mp4" \
   -H "Content-Type: multipart/form-data"
 ```
 
@@ -575,16 +641,14 @@ docker-compose logs kafka
 src/main/java/br/com/fiap/videosapi/
 ├── core/
 │   └── config/
-│       ├── RedisConfig.java          # Configuração do Redis
-│       └── DevelopmentConfig.java    # Beans para desenvolvimento
+│       ├── KafkaConfig.java          # Configuração do Kafka
+│       └── ObjectMapperConfig.java   # Configuração do ObjectMapper (JavaTime)
 ├── video/
 │   └── infrastructure/
 │       ├── azure/
 │       │   ├── AzureBlobStorageService.java
-│       │   └── MockAzureBlobStorageService.java
 │       └── kafka/
 │           ├── VideoEventProducer.java
-│           ├── MockVideoEventProducer.java
 │           └── VideoEventPublisher.java
 ```
 
@@ -597,4 +661,4 @@ src/main/java/br/com/fiap/videosapi/
 
 ---
 
-Para dúvidas ou sugestões, consulte a documentação da API em `http://localhost:8080/swagger-ui.html` quando a aplicação estiver rodando.
+Para dúvidas ou sugestões, consulte a documentação da API em `http://localhost:8080/videos/swagger-ui/index.html` quando a aplicação estiver rodando.
