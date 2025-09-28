@@ -38,7 +38,7 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
             "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", "video/webm", "video/mkv"
     );
 
-    private static final long MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+    private static final long MAX_FILE_SIZE = 500 * 1024 * 1024;
 
     @Override
     @Transactional
@@ -132,7 +132,6 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
             throw new IllegalArgumentException("File size exceeds maximum allowed size of 500MB");
         }
 
-        // Detect MIME type using Apache Tika for better accuracy
         String detectedMimeType = tika.detect(file.getInputStream());
 
         if (detectedMimeType == null || !ALLOWED_VIDEO_TYPES.contains(detectedMimeType)) {

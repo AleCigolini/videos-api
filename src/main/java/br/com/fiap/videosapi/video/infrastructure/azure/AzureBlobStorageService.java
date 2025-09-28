@@ -26,7 +26,7 @@ public class AzureBlobStorageService {
     }
 
     public AzureBlobUploadResult uploadVideo(MultipartFile file, Long idVideo) {
-        createContainerIfNotExists(); // Garante que o container existe antes do upload
+        createContainerIfNotExists();
         try {
             String originalFileName = file.getOriginalFilename();
             String fileName = idVideo + "/" + originalFileName;

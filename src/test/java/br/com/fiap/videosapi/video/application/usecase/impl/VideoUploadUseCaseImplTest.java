@@ -50,13 +50,13 @@ class VideoUploadUseCaseImplTest {
         autoCloseable = MockitoAnnotations.openMocks(this);
         videoUploadUseCase = new VideoUploadUseCaseImpl(
                 azureBlobStorageService, videoEventProducer, videoRepository);
-        // Set connection string via reflection (since @Value is not injected in test)
+
         try {
             java.lang.reflect.Field field = VideoUploadUseCaseImpl.class.getDeclaredField("connectionString");
             field.setAccessible(true);
             field.set(videoUploadUseCase, "fake-connection-string");
         } catch (Exception ignored) {}
-        // Replace Tika instance
+
         try {
             java.lang.reflect.Field field = VideoUploadUseCaseImpl.class.getDeclaredField("tika");
             field.setAccessible(true);
@@ -136,7 +136,7 @@ class VideoUploadUseCaseImplTest {
     @DisplayName("Deve retornar erro para arquivo maior que o permitido")
     void deveRetornarErroParaArquivoGrande() {
         when(multipartFile.isEmpty()).thenReturn(false);
-        when(multipartFile.getSize()).thenReturn(600L * 1024 * 1024); // 600MB
+        when(multipartFile.getSize()).thenReturn(600L * 1024 * 1024);
         VideoUploadResponse response = videoUploadUseCase.uploadVideo(multipartFile, "user123");
         assertNotNull(response);
         assertTrue(response.getMessage().contains("exceeds"));
