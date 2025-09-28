@@ -42,36 +42,44 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
 
     @Override
     @Transactional
-    public List<VideoUploadResponse> uploadVideos(List<MultipartFile> files) {
+    public List<VideoUploadResponse> uploadVideos(List<MultipartFile> files, String userId) {
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("No files provided for upload");
         }
 
         return files.stream()
-                .map(this::uploadVideo)
+                .map(file -> uploadVideo(file, userId))
                 .toList();
     }
 
-    @Override
     @Transactional
-    public VideoUploadResponse uploadVideo(MultipartFile file) {
+    public VideoUploadResponse uploadVideo(MultipartFile file, String userId) {
         try {
-            // Validate file
             validateVideoFile(file);
 
-            // Upload to Azure Blob Storage
-            AzureBlobUploadResult uploadResult = azureBlobStorageService.uploadVideo(file);
+            Video video = Video.builder()
+                    .idCliente(userId)
+                    .originalFileName(file.getOriginalFilename())
+                    .contentType(file.getContentType())
+                    .fileSize(file.getSize())
+                    .status(VideoStatus.UPLOADED)
+                    .build();
+            video = videoRepository.save(video);
+
+            AzureBlobUploadResult uploadResult = azureBlobStorageService.uploadVideo(file, video.getId());
 
             if (!uploadResult.isSuccess()) {
                 throw new RuntimeException("Failed to upload video to Azure: " + uploadResult.getErrorMessage());
             }
 
-            // Save video metadata to database
-            Video video = createVideoFromUpload(file, uploadResult);
+            video.setStoredFileName(uploadResult.getFileName());
+            video.setAzureBlobUrl(uploadResult.getBlobUrl());
+            video.setContainerName(uploadResult.getContainerName());
+            video.setFileSize(file.getSize());
+            video.setContentType(file.getContentType());
             video = videoRepository.save(video);
 
-            // Publish event for video processing
-            VideoUploadEvent event = createVideoUploadEvent(video, uploadResult);
+            VideoUploadEvent event = createVideoUploadEvent(video, uploadResult, userId);
             videoEventProducer.publishVideoUploadEvent(event);
 
             return buildSuccessResponse(video);
@@ -84,21 +92,10 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
         }
     }
 
-    private Video createVideoFromUpload(MultipartFile file, AzureBlobUploadResult uploadResult) {
-        return Video.builder()
-                .originalFileName(file.getOriginalFilename())
-                .storedFileName(uploadResult.getFileName())
-                .contentType(file.getContentType())
-                .fileSize(file.getSize())
-                .azureBlobUrl(uploadResult.getBlobUrl())
-                .containerName(uploadResult.getContainerName())
-                .status(VideoStatus.UPLOADED)
-                .build();
-    }
-
-    private VideoUploadEvent createVideoUploadEvent(Video video, AzureBlobUploadResult uploadResult) {
+    private VideoUploadEvent createVideoUploadEvent(Video video, AzureBlobUploadResult uploadResult, String userId) {
         return VideoUploadEvent.builder()
                 .videoId(video.getId())
+                .userId(userId)
                 .azureBlobUrl(uploadResult.getBlobUrl())
                 .originalFileName(video.getOriginalFileName())
                 .storedFileName(video.getStoredFileName())
