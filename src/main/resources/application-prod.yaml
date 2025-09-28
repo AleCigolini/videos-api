@@ -26,6 +26,7 @@ spring:
       security.protocol: SASL_SSL
       sasl.mechanism: PLAIN
       sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG}
+      ssl.endpoint.identification.algorithm: https
 
 
 azure:
