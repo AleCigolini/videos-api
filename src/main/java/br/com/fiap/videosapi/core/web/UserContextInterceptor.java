@@ -20,7 +20,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
         // Allow actuator and swagger without user header
         String uri = request.getRequestURI();
-        boolean isPublic = uri.contains("/actuator") || uri.contains("/swagger") || uri.contains("/v3/api-docs");
+        boolean isPublic = uri.contains("/actuator") || uri.contains("/swagger") || uri.contains("/api-docs");
 
         if (userId == null || userId.isBlank()) {
             if (isPublic) {
