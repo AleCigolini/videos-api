@@ -22,7 +22,11 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 1
-        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG}
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: PLAIN
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG}
+
 
 azure:
   storage:
