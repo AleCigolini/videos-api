@@ -7,7 +7,6 @@ import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
 import br.com.fiap.videosapi.video.infrastructure.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,24 +22,28 @@ public class VideoStatusUpdateUseCaseImpl implements VideoStatusUpdateUseCase {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"videos", "video"}, allEntries = true)
-    public void updateVideoStatus(Long videoId, VideoStatus newStatus, String message, String processedBy) {
-        log.info("Updating video status for ID: {} to status: {}", videoId, newStatus);
+    public void updateVideoStatus(Long videoId, String status) {
+        log.info("Updating video status for ID: {} to status: {}", videoId, status);
         
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() -> new RuntimeException("Video not found with ID: " + videoId));
 
         VideoStatus previousStatus = video.getStatus();
-        video.setStatus(newStatus);
-        
-        if (newStatus == VideoStatus.PROCESSED) {
+
+        if (status.equals("ERROR")) {
+            video.setStatus(VideoStatus.FAILED);
+        } else if (status.equals("SUCCESS")) {
+            video.setStatus(VideoStatus.PROCESSED);
+        }
+
+        if (video.getStatus().equals(VideoStatus.PROCESSED)) {
             video.setProcessedAt(LocalDateTime.now());
         }
-        
+
         videoRepository.save(video);
         
         log.info("Video status updated successfully for ID: {} from {} to {}",
-                videoId, previousStatus, newStatus);
+                videoId, previousStatus, video.getStatus());
     }
 
     @Override
@@ -49,10 +52,6 @@ public class VideoStatusUpdateUseCaseImpl implements VideoStatusUpdateUseCase {
         log.info("Processing status update event for video ID: {}", event.getVideoId());
         
         try {
-            if (event.getUserId() == null || event.getUserId().isBlank()) {
-                throw new IllegalArgumentException("Missing userId in VideoStatusUpdateEvent");
-            }
-
             Optional<Video> videoOpt = videoRepository.findById(event.getVideoId());
             if (videoOpt.isEmpty()) {
                 throw new RuntimeException("Video not found with ID: " + event.getVideoId());
@@ -65,9 +64,7 @@ public class VideoStatusUpdateUseCaseImpl implements VideoStatusUpdateUseCase {
 
             updateVideoStatus(
                     event.getVideoId(),
-                    event.getNewStatus(),
-                    event.getMessage(),
-                    event.getProcessedBy()
+                    event.getStatus()
             );
             
             log.info("Status update event processed successfully for video ID: {}", event.getVideoId());

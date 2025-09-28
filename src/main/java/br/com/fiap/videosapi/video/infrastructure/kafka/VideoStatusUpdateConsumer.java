@@ -36,7 +36,7 @@ public class VideoStatusUpdateConsumer {
         try {
             VideoStatusUpdateEvent event = objectMapper.readValue(message, VideoStatusUpdateEvent.class);
             log.info("Processing status update for video ID: {} to status: {} (userId={})",
-                    event.getVideoId(), event.getNewStatus(), event.getUserId());
+                    event.getVideoId(), event.getStatus(), event.getUserId());
 
             if (event.getUserId() == null || event.getUserId().isBlank()) {
                 throw new IllegalArgumentException("Missing userId in VideoStatusUpdateEvent");

@@ -2,7 +2,6 @@ package br.com.fiap.videosapi.video.infrastructure.kafka;
 
 import br.com.fiap.videosapi.video.application.usecase.VideoStatusUpdateUseCase;
 import br.com.fiap.videosapi.video.common.domain.dto.event.VideoStatusUpdateEvent;
-import br.com.fiap.videosapi.video.domain.entity.VideoStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,10 +42,8 @@ class VideoStatusUpdateConsumerTest {
     void setUp() {
         videoStatusUpdateEvent = VideoStatusUpdateEvent.builder()
                 .videoId(1L)
-                .newStatus(VideoStatus.PROCESSED)
-                .message("Processamento concluído com sucesso")
-                .processedBy("processing-service")
                 .userId("user-123")
+                .status("SUCCESS")
                 .build();
     }
 
@@ -71,9 +68,8 @@ class VideoStatusUpdateConsumerTest {
 
         VideoStatusUpdateEvent eventProcessing = VideoStatusUpdateEvent.builder()
                 .videoId(2L)
-                .newStatus(VideoStatus.PROCESSING)
-                .message("Iniciando processamento")
                 .userId("user-abc")
+                .status("SUCCESS")
                 .build();
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -91,9 +87,8 @@ class VideoStatusUpdateConsumerTest {
 
         VideoStatusUpdateEvent eventError = VideoStatusUpdateEvent.builder()
                 .videoId(3L)
-                .newStatus(VideoStatus.FAILED)
-                .message("Falha no processamento")
                 .userId("user-xyz")
+                .status("SUCCESS")
                 .build();
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
@@ -195,8 +190,8 @@ class VideoStatusUpdateConsumerTest {
 
         VideoStatusUpdateEvent eventIdGrande = VideoStatusUpdateEvent.builder()
                 .videoId(999999999L)
-                .newStatus(VideoStatus.PROCESSED)
                 .userId("user-123")
+                .status("SUCCESS")
                 .build();
 
         when(objectMapper.readValue(message, VideoStatusUpdateEvent.class))
