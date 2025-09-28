@@ -36,7 +36,7 @@ public class VideoUploadUseCaseImpl implements VideoUploadUseCase {
     String connectionString;
 
     private static final List<String> ALLOWED_VIDEO_TYPES = Arrays.asList(
-            "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", "video/webm", "video/mkv"
+            "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", "video/webm", "video/mkv", "video/quicktime"
     );
 
     private static final long MAX_FILE_SIZE = 500 * 1024 * 1024;
