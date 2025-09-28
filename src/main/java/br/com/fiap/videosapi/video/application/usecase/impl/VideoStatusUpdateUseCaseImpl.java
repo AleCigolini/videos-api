@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 public class VideoStatusUpdateUseCaseImpl implements VideoStatusUpdateUseCase {
 
     private final VideoRepository videoRepository;
-//    private final VideoCacheService videoCacheService;
 
     @Override
     @Transactional
@@ -39,11 +38,7 @@ public class VideoStatusUpdateUseCaseImpl implements VideoStatusUpdateUseCase {
         
         videoRepository.save(video);
         
-        // Update Redis cache for quick status lookup
-//        videoCacheService.updateVideoStatusCache(videoId, newStatus);
-//        videoCacheService.cacheVideo(video);
-        
-        log.info("Video status updated successfully for ID: {} from {} to {}", 
+        log.info("Video status updated successfully for ID: {} from {} to {}",
                 videoId, previousStatus, newStatus);
     }
 

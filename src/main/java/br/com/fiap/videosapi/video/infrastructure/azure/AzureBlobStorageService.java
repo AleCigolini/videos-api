@@ -3,8 +3,6 @@ package br.com.fiap.videosapi.video.infrastructure.azure;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.models.BlobItem;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,9 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -23,16 +18,15 @@ public class AzureBlobStorageService {
     private final BlobServiceClient blobServiceClient;
     private final String containerName;
 
-    public AzureBlobStorageService(@Value("${azure.storage.connection-string}") String connectionString,
-                                   @Value("${azure.storage.container-name}") String containerName) {
-        this.blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
+    public AzureBlobStorageService(
+            @Value("${azure.storage.container-name}") String containerName,
+            BlobServiceClient blobServiceClient) {
+        this.blobServiceClient = blobServiceClient;
         this.containerName = containerName;
-        createContainerIfNotExists();
     }
 
     public AzureBlobUploadResult uploadVideo(MultipartFile file, Long idVideo) {
+        createContainerIfNotExists(); // Garante que o container existe antes do upload
         try {
             String originalFileName = file.getOriginalFilename();
             String fileName = idVideo + "/" + originalFileName;
@@ -61,19 +55,6 @@ public class AzureBlobStorageService {
         }
     }
 
-    public boolean deleteVideo(String fileName) {
-        try {
-            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-            BlobClient blobClient = containerClient.getBlobClient(fileName);
-            blobClient.delete();
-            log.info("Successfully deleted file {} from Azure Blob Storage", fileName);
-            return true;
-        } catch (Exception e) {
-            log.error("Error deleting file {} from Azure Blob Storage", fileName, e);
-            return false;
-        }
-    }
-
     public InputStream openBlobInputStream(String blobName) {
         BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
         BlobClient blobClient = containerClient.getBlobClient(blobName);
@@ -88,21 +69,10 @@ public class AzureBlobStorageService {
         return containerClient.getBlobClient(blobName).exists();
     }
 
-    public List<String> listBlobsByPrefix(String prefix) {
-        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-        List<String> blobNames = new ArrayList<>();
-        for (BlobItem blobItem : containerClient.listBlobs()) {
-            if (blobItem.getName().startsWith(prefix)) {
-                blobNames.add(blobItem.getName());
-            }
-        }
-        return blobNames;
-    }
-
     private void createContainerIfNotExists() {
         try {
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-            if (!containerClient.exists()) {
+            if (containerClient != null && !containerClient.exists()) {
                 containerClient.create();
                 log.info("Created container: {}", containerName);
             }
