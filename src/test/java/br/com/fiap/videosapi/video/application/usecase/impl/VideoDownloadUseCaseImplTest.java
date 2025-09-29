@@ -46,16 +46,16 @@ class VideoDownloadUseCaseImplTest {
     @DisplayName("Deve preparar download com sucesso quando frames.zip existe")
     void devePrepararDownloadComSucesso() {
         when(videoRepository.findById(1L)).thenReturn(Optional.of(video));
-        when(azureBlobStorageService.blobExists("cliente1/1/frames/frames.zip")).thenReturn(true);
+        when(azureBlobStorageService.blobExists("cliente1/1/frames.zip")).thenReturn(true);
 
         VideoDownloadData data = videoDownloadUseCase.prepareDownload(1L, "cliente1");
 
         assertNotNull(data);
         assertEquals(video, data.getVideo());
-        assertEquals("cliente1/1/frames/frames.zip", data.getVideoBlobName());
+        assertEquals("cliente1/1/frames.zip", data.getVideoBlobName());
         assertEquals("frames-video-teste.mp4.zip", data.getZipFileName());
         verify(videoRepository).findById(1L);
-        verify(azureBlobStorageService).blobExists("cliente1/1/frames/frames.zip");
+        verify(azureBlobStorageService).blobExists("cliente1/1/frames.zip");
     }
 
     @Test
@@ -75,14 +75,14 @@ class VideoDownloadUseCaseImplTest {
     @DisplayName("Deve lançar exceção quando frames.zip não existe")
     void deveLancarExcecaoQuandoFramesZipNaoExiste() {
         when(videoRepository.findById(1L)).thenReturn(Optional.of(video));
-        when(azureBlobStorageService.blobExists("cliente1/1/frames/frames.zip")).thenReturn(false);
+        when(azureBlobStorageService.blobExists("cliente1/1/frames.zip")).thenReturn(false);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 videoDownloadUseCase.prepareDownload(1L, "cliente1")
         );
         assertEquals("Arquivo frames.zip não encontrado para o vídeo: 1", ex.getMessage());
         verify(videoRepository).findById(1L);
-        verify(azureBlobStorageService).blobExists("cliente1/1/frames/frames.zip");
+        verify(azureBlobStorageService).blobExists("cliente1/1/frames.zip");
     }
 }
 
