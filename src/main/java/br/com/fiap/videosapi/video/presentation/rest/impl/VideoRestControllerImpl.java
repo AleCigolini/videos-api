@@ -12,15 +12,12 @@ import br.com.fiap.videosapi.video.presentation.rest.VideoRestController;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.InputStream;
 import java.util.List;
 
 @RestController
@@ -102,41 +99,24 @@ public class VideoRestControllerImpl implements VideoRestController {
     }
 
     @Override
-    @GetMapping(value = "/{id}/download", produces = "application/zip")
-    public ResponseEntity<StreamingResponseBody> downloadCompactedVideoFrames(
+    @GetMapping(value = "/{id}/download-url")
+    public ResponseEntity<String> downloadCompactedVideoUrl(
             @PathVariable Long id,
             HttpServletRequest request
     ) {
-        log.info("Received request to download frames.zip for video {}", id);
+        log.info("Received request to generate public download URL for video {}", id);
         try {
             String userId = request.getHeader("x-cliente-id");
             VideoDownloadData data = videoDownloadUseCase.prepareDownload(id, userId);
 
-            StreamingResponseBody responseBody = outputStream -> {
-                try (InputStream in = azureBlobStorageService.openBlobInputStream(data.getVideoBlobName())) {
-                    byte[] buffer = new byte[8192];
-                    int len;
-                    while ((len = in.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, len);
-                    }
-                } catch (Exception ex) {
-                    log.error("Error while streaming frames.zip for video {}: {}", id, ex.getMessage(), ex);
-                }
-            };
+            String publicUrl = azureBlobStorageService.generatePublicUrl(data.getVideoBlobName());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + data.getZipFileName());
-            headers.add(HttpHeaders.CONTENT_TYPE, "application/zip");
-
-            return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            log.warn("Download request failed: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        } catch (IllegalStateException e) {
-            log.warn("Invalid state for download: {}", e.getMessage());
+            return ResponseEntity.ok(publicUrl);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Download URL request failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
-            log.error("Unexpected error generating ZIP for video {}", id, e);
+            log.error("Unexpected error generating public URL for video {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

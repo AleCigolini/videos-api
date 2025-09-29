@@ -12,21 +12,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(VideoRestControllerImpl.class)
@@ -150,35 +146,24 @@ class VideoRestControllerImplTest {
     }
 
     @Test
-    @DisplayName("Deve realizar download de frames.zip com sucesso")
-    void deveRealizarDownloadComSucesso() throws Exception {
-        byte[] zipContent = "conteudo-zip".getBytes();
+    @DisplayName("Deve retornar URL pública SAS para download do vídeo")
+    void deveRetornarUrlPublicaSasParaDownload() throws Exception {
         VideoDownloadData data = VideoDownloadData.builder()
                 .video(null)
                 .videoBlobName("cliente1/1/frames/frames.zip")
                 .zipFileName("frames-video.mp4.zip")
                 .build();
+        String publicUrl = "https://blob.url/cliente1/1/frames/frames.zip?sv=2023-11-03&sp=r&sig=abcdef";
+
         when(videoDownloadUseCase.prepareDownload(1L, "cliente1")).thenReturn(data);
-        when(azureBlobStorageService.openBlobInputStream("cliente1/1/frames/frames.zip"))
-                .thenReturn(new ByteArrayInputStream(zipContent));
+        when(azureBlobStorageService.generatePublicUrl("cliente1/1/frames/frames.zip")).thenReturn(publicUrl);
 
-        MockHttpServletRequestBuilder request = get("/api/v1/videos/1/download")
-                .header("x-cliente-id", "cliente1");
-
-        mockMvc.perform(request)
+        mockMvc.perform(get("/api/v1/videos/1/download-url")
+                        .header("x-cliente-id", "cliente1"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=frames-video.mp4.zip"))
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/zip"));
+                .andExpect(content().string(publicUrl));
     }
 
-    @Test
-    @DisplayName("Deve retornar 404 quando vídeo ou frames.zip não encontrado")
-    void deveRetornarNotFoundQuandoVideoOuArquivoNaoEncontrado() throws Exception {
-        when(videoDownloadUseCase.prepareDownload(anyLong(), anyString())).thenThrow(new IllegalArgumentException("Não encontrado"));
-
-        mockMvc.perform(get("/api/v1/videos/1/download").header("x-cliente-id", "cliente1"))
-                .andExpect(status().isNotFound());
-    }
 
     @Test
     @DisplayName("Deve retornar 500 quando ocorrer erro inesperado no download")

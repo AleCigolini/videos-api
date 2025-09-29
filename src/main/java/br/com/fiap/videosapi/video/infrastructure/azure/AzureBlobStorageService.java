@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
+import com.azure.storage.blob.sas.BlobSasPermission;
+import java.time.OffsetDateTime;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,18 +58,21 @@ public class AzureBlobStorageService {
         }
     }
 
-    public InputStream openBlobInputStream(String blobName) {
-        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-        BlobClient blobClient = containerClient.getBlobClient(blobName);
-        if (!blobClient.exists()) {
-            throw new IllegalArgumentException("Blob not found: " + blobName);
-        }
-        return blobClient.openInputStream();
-    }
-
     public boolean blobExists(String blobName) {
         BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
         return containerClient.getBlobClient(blobName).exists();
+    }
+
+    public String generatePublicUrl(String blobName) {
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+        BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(
+                OffsetDateTime.now().plusHours(1),
+                BlobSasPermission.parse("r")
+        );
+        String sasToken = blobClient.generateSas(values);
+        return blobClient.getBlobUrl() + "?" + sasToken;
     }
 
     private void createContainerIfNotExists() {

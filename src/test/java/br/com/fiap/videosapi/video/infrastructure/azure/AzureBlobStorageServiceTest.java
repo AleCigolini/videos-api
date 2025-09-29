@@ -3,7 +3,7 @@ package br.com.fiap.videosapi.video.infrastructure.azure;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.specialized.BlobInputStream;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,16 +82,23 @@ class AzureBlobStorageServiceTest {
     }
 
     @Test
-    @DisplayName("Deve abrir InputStream do blob corretamente")
-    void deveAbrirInputStreamDoBlob() {
-        BlobInputStream fakeStream = mock(BlobInputStream.class);
-        when(blobClient.openInputStream()).thenReturn(fakeStream);
-        when(blobClient.exists()).thenReturn(true);
+    @DisplayName("Deve gerar URL pública SAS válida para o blob")
+    void deveGerarUrlPublicaSasValida() {
+        String blobName = "1/video.mp4";
+        String blobUrl = "https://blob.url/1/video.mp4";
+        String sasToken = "sv=2023-11-03&sr=b&sp=r&sig=abcdef";
+        when(blobContainerClient.getBlobClient(blobName)).thenReturn(blobClient);
+        when(blobClient.getBlobUrl()).thenReturn(blobUrl);
+        when(blobClient.generateSas(any(BlobServiceSasSignatureValues.class))).thenReturn(sasToken);
 
-        InputStream result = azureBlobStorageService.openBlobInputStream("blob.mp4");
-        assertNotNull(result);
-        assertEquals(fakeStream, result);
-        verify(blobContainerClient).getBlobClient("blob.mp4");
-        verify(blobClient).openInputStream();
+        String publicUrl = azureBlobStorageService.generatePublicUrl(blobName);
+
+        assertNotNull(publicUrl);
+        assertTrue(publicUrl.startsWith(blobUrl + "?"));
+        assertTrue(publicUrl.contains("sv="));
+        assertTrue(publicUrl.contains("sp=r"));
+        assertTrue(publicUrl.contains("sig="));
+        verify(blobClient).generateSas(any(BlobServiceSasSignatureValues.class));
     }
+
 }
