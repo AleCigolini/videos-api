@@ -22,7 +22,7 @@ public class VideoDownloadUseCaseImpl implements VideoDownloadUseCase {
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() -> new IllegalArgumentException("Video not found with id: " + videoId));
 
-        String framesZipBlobName = userId + "/" + videoId + "/frames/frames.zip";
+        String framesZipBlobName = userId + "/" + videoId + "/frames.zip";
         if (!azureBlobStorageService.blobExists(framesZipBlobName)) {
             throw new IllegalArgumentException("Arquivo frames.zip não encontrado para o vídeo: " + videoId);
         }
