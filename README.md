@@ -265,7 +265,7 @@ GET /videos/actuator/health
 ![pods.jpg](assets/images/pods.jpg)
 O cluster k8s-fiap é configurado com dois namespaces principais, cada um com funções específicas:
 - default: Namespace onde as aplicações principais são implantadas e gerenciadas, contendo os PODs:
-    - java-app-*: microsserviço presente no cluster.
+    - videos-api: aplicação presente no cluster.
         - Ingress: Configurado para gerenciar o tráfego de entrada direcionado à aplicação Java.
         - Cluster IP: Endereço IP interno para comunicação dentro do cluster.
         - Deployment: Gerencia a implantação e a escalabilidade da aplicação Java.
