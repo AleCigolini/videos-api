@@ -47,8 +47,7 @@ public interface VideoRestController {
     })
     ResponseEntity<?> uploadVideos(
             @Parameter(description = "Video files to upload (max 500MB each, supported formats: mp4, avi, mov, wmv, flv, webm, mkv)", required = true)
-            @RequestParam("files") List<MultipartFile> files,
-            HttpServletRequest request
+            @RequestParam("files") List<MultipartFile> files
     );
 
     @Operation(

@@ -33,16 +33,13 @@ public class VideoRestControllerImpl implements VideoRestController {
 
     @Override
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadVideos(
-            @RequestParam("files") List<MultipartFile> files,
-            HttpServletRequest request
-    ) {
-        log.info("Received request to upload {} video(s)", files.size());
-
-        if (files.isEmpty() || files.stream().allMatch(MultipartFile::isEmpty)) {
+    public ResponseEntity<?> uploadVideos(@RequestParam("files") List<MultipartFile> files) {
+        if (files == null || files.isEmpty() || files.stream().allMatch(MultipartFile::isEmpty)) {
             log.warn("No files provided in the upload request");
             return ResponseEntity.badRequest().body("No files provided for upload");
         }
+
+        log.info("Received request to upload {} video(s)", files.size());
 
         try {
             List<VideoUploadResponse> responses = videoUploadUseCase.uploadVideos(files);
